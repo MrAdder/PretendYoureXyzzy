@@ -193,6 +193,20 @@ function chatsubmit_click(game_id, parent_element) {
         // this could also be an IP address
         ajax = cah.Ajax.build(cah.$.AjaxOperation.BAN).withNickname(text.split(' ')[0]);
         break;
+      case 'host':
+        if (game_id !== null) {
+          ajax = cah.Ajax.build(cah.$.AjaxOperation.GAME_HOST).withGameId(game_id).withNickname(text.split(' ')[0]);
+        } else {
+          cah.log.error(cah.$.ErrorCode_msg[cah.$.ErrorCode.NO_GAME_SPECIFIED]);
+        }
+        break;
+      case 'skip':
+        if (game_id !== null) {
+          ajax = cah.Ajax.build(cah.$.AjaxOperation.GAME_SKIP).withGameId(game_id).withNickname(text.split(' ')[0]);
+        } else {
+          cah.log.error(cah.$.ErrorCode_msg[cah.$.ErrorCode.NO_GAME_SPECIFIED]);
+        }
+        break;
       case 'sync':
         if (game_id !== null) {
           var game = cah.currentGames[game_id];
@@ -201,7 +215,7 @@ function chatsubmit_click(game_id, parent_element) {
           }
           ajax = cah.Ajax.build(cah.$.AjaxOperation.GET_CARDS).withGameId(game_id);
         } else {
-          cah.log.error("This command only works in a game.");
+          cah.log.error(cah.$.ErrorCode_msg[cah.$.ErrorCode.NO_GAME_SPECIFIED]);
         }
         break;
       case 'score':
@@ -212,29 +226,6 @@ function chatsubmit_click(game_id, parent_element) {
         break;
       case 'names':
         ajax = cah.Ajax.build(cah.$.AjaxOperation.NAMES);
-        break;
-      case 'addcardcast':
-        if (game_id !== null) {
-          ajax = cah.Ajax.build(cah.$.AjaxOperation.CARDCAST_ADD_CARDSET).withCardcastId(
-              text.split(' ')[0]).withGameId(game_id);
-        } else {
-          cah.log.error("This command only works in a game.");
-        }
-        break;
-      case 'removecardcast':
-        if (game_id !== null) {
-          ajax = cah.Ajax.build(cah.$.AjaxOperation.CARDCAST_REMOVE_CARDSET).withCardcastId(
-              text.split(' ')[0]).withGameId(game_id);
-        } else {
-          cah.log.error("This command only works in a game.");
-        }
-        break;
-      case 'listcardcast':
-        if (game_id !== null) {
-          ajax = cah.Ajax.build(cah.$.AjaxOperation.CARDCAST_LIST_CARDSETS).withGameId(game_id);
-        } else {
-          cah.log.error("This command only works in a game.");
-        }
         break;
       case 'whois':
         ajax = cah.Ajax.build(cah.$.AjaxOperation.WHOIS).withNickname(text.split(' ')[0]);

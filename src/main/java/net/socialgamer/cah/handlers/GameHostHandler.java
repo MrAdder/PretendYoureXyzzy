@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2012, Andy Janata
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted
  * provided that the following conditions are met:
- * 
+ *
  * * Redistributions of source code must retain the above copyright notice, this list of conditions
  *   and the following disclaimer.
  * * Redistributions in binary form must reproduce the above copyright notice, this list of
  *   conditions and the following disclaimer in the documentation and/or other materials provided
  *   with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
  * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
@@ -29,48 +29,57 @@ import java.util.Map;
 import javax.servlet.http.HttpSession;
 
 import net.socialgamer.cah.Constants.AjaxOperation;
+import net.socialgamer.cah.Constants.AjaxRequest;
 import net.socialgamer.cah.Constants.ErrorCode;
-import net.socialgamer.cah.Constants.GameState;
 import net.socialgamer.cah.Constants.ReturnableData;
 import net.socialgamer.cah.RequestWrapper;
+import net.socialgamer.cah.data.ConnectedUsers;
 import net.socialgamer.cah.data.Game;
 import net.socialgamer.cah.data.GameManager;
 import net.socialgamer.cah.data.User;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 
 
 /**
- * Handler to stop a game.
+ * Handler for host change requests.
+ *
+ * @author Gavin Lambert (uecasm)
  */
-public class StopGameHandler extends GameWithPlayerHandler {
+public class GameHostHandler extends GameWithPlayerHandler {
 
-  protected final Logger logger = LogManager.getLogger(GameWithPlayerHandler.class);
+  public static final String OP = AjaxOperation.GAME_HOST.toString();
 
-  public static final String OP = AjaxOperation.STOP_GAME.toString();
+  private final ConnectedUsers connectedUsers;
 
   @Inject
-  public StopGameHandler(final GameManager gameManager) {
+  public GameHostHandler(final ConnectedUsers connectedUsers, final GameManager gameManager) {
     super(gameManager);
+    this.connectedUsers = connectedUsers;
   }
 
   @Override
   public Map<ReturnableData, Object> handleWithUserInGame(final RequestWrapper request,
       final HttpSession session, final User user, final Game game) {
-    final Map<ReturnableData, Object> data = new HashMap<ReturnableData, Object>();
+    if (null == request.getParameter(AjaxRequest.NICKNAME)
+        || request.getParameter(AjaxRequest.NICKNAME).isEmpty()) {
+      return error(ErrorCode.NO_NICK_SPECIFIED);
+    }
 
-    if (game.getHost() != user) {
+    // only an admin or the current host may change the host of a game
+    if (!user.isAdmin() && user != game.getHost()) {
       return error(ErrorCode.NOT_GAME_HOST);
-    } else if (game.getState() == GameState.LOBBY) {
-      return error(ErrorCode.ALREADY_STOPPED);
+    }
+
+    final User newHost = connectedUsers.getUser(request.getParameter(AjaxRequest.NICKNAME));
+    if (null == newHost) {
+      return error(ErrorCode.NO_SUCH_USER);
+    }
+
+    if (game.changeHost(newHost)) {
+      return new HashMap<ReturnableData, Object>();
     } else {
-      logger.info(String.format("Game %d stopped by host %s. Players: %s", game.getId(), user,
-          game.getPlayers()));
-      game.resetState(false);
-      return data;
+      return error(ErrorCode.BAD_REQUEST);
     }
   }
 }

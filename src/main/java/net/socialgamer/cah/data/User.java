@@ -26,11 +26,13 @@ package net.socialgamer.cah.data;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.annotation.Nullable;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
@@ -48,13 +50,13 @@ import net.socialgamer.cah.Constants.Sigil;
  */
 public class User {
 
-  private static final Logger LOG = Logger.getLogger(User.class);
+  private static final Logger LOG = LogManager.getLogger(User.class);
 
   private final String nickname;
 
   private final String idCode;
 
-  private final PriorityBlockingQueue<QueuedMessage> queuedMessages;
+  private final BlockingQueue<QueuedMessage> queuedMessages;
 
   private final Object queuedMessageSynchronization = new Object();
 
@@ -121,7 +123,7 @@ public class User {
     this.sessionId = sessionId;
     this.clientLanguage = clientLanguage == null ? "" : clientLanguage;
     agent = UADetectorServiceFactory.getResourceModuleParser().parse(clientAgent);
-    queuedMessages = new PriorityBlockingQueue<QueuedMessage>();
+    queuedMessages = new LinkedBlockingQueue<QueuedMessage>();
   }
 
   public interface Factory {
