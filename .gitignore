@@ -1,6 +1,7 @@
 build
 build.properties
 target
+.m2cache
 ssl/
 src/main/java/net/socialgamer/cah/util/RealShadowBannedStringProvider.java
 .idea

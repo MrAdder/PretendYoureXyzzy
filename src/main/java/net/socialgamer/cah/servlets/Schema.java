@@ -25,11 +25,8 @@ package net.socialgamer.cah.servlets;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.EnumSet;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -45,8 +42,20 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.PostgreSQLDialect;
-import org.hibernate.tool.hbm2ddl.SchemaExport;
+import org.hibernate.tool.schema.SourceType;
 import org.hibernate.tool.schema.TargetType;
+import org.hibernate.tool.schema.internal.DefaultSchemaFilter;
+import org.hibernate.tool.schema.internal.ExceptionHandlerLoggedImpl;
+import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
+import org.hibernate.tool.schema.spi.ContributableMatcher;
+import org.hibernate.tool.schema.spi.ExceptionHandler;
+import org.hibernate.tool.schema.spi.ExecutionOptions;
+import org.hibernate.tool.schema.spi.SchemaFilter;
+import org.hibernate.tool.schema.spi.SchemaManagementTool;
+import org.hibernate.tool.schema.spi.ScriptSourceInput;
+import org.hibernate.tool.schema.spi.ScriptTargetOutput;
+import org.hibernate.tool.schema.spi.SourceDescriptor;
+import org.hibernate.tool.schema.spi.TargetDescriptor;
 
 
 /**
@@ -66,7 +75,7 @@ public class Schema extends HttpServlet {
   @Override
   protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
       throws ServletException, IOException {
-    // Force PostgreSQL regardless of what's actually configured (likely SqliteDialect for local
+    // Force PostgreSQL regardless of what's actually configured (likely SQLiteDialect for local
     // dev): this endpoint exists to show what the schema would look like for a production deploy.
     final StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
         .configure()
@@ -74,61 +83,58 @@ public class Schema extends HttpServlet {
         .build();
     try {
       final Metadata metadata = new MetadataSources(registry).buildMetadata();
-      final Path tempFile;
-      try {
-        tempFile = createRestrictedTempFile();
-      } catch (final IOException e) {
-        LOG.error("Unable to create temporary file for schema export", e);
-        try {
-          response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-              "Unable to create temporary file for schema export.");
-        } catch (final IOException e2) {
-          LOG.error("Unable to send error response", e2);
-        }
-        return;
-      }
-      try {
-        new SchemaExport()
-            .setOutputFile(tempFile.toAbsolutePath().toString())
-            .setDelimiter(";")
-            .create(EnumSet.of(TargetType.SCRIPT), metadata);
-        final PrintWriter out = response.getWriter();
-        try {
-          for (final String line : Files.readAllLines(tempFile)) {
-            out.println(line);
-          }
-        } catch (final IOException e) {
-          LOG.error("Unable to read back generated schema file {}", tempFile, e);
-          out.println("-- Error reading generated schema; see server log.");
-        }
-      } finally {
-        try {
-          Files.deleteIfExists(tempFile);
-        } catch (final IOException e) {
-          LOG.warn("Unable to delete temporary schema file {}", tempFile, e);
-        }
-      }
+      final PrintWriter out = response.getWriter();
+      final ScriptTargetOutput target = new ScriptTargetOutputToWriter(out);
+      registry.getService(SchemaManagementTool.class)
+          .getSchemaCreator(Map.of())
+          .doCreation(metadata, EXECUTION_OPTIONS, ContributableMatcher.ALL, SOURCE_DESCRIPTOR,
+              new TargetDescriptor() {
+                @Override
+                public EnumSet<TargetType> getTargetTypes() {
+                  return EnumSet.of(TargetType.SCRIPT);
+                }
+
+                @Override
+                public ScriptTargetOutput getScriptTargetOutput() {
+                  return target;
+                }
+              });
     } finally {
       StandardServiceRegistryBuilder.destroy(registry);
     }
   }
 
-  /**
-   * Create a temporary file readable and writable only by this process' own user.
-   * java.io.tmpdir is typically shared/world-writable; restricting access at creation (rather
-   * than via a chmod-style call afterward) avoids a window where the file briefly has default,
-   * more permissive access. This requires a POSIX filesystem, which is what every supported
-   * deployment target (Docker/Linux) uses.
-   */
-  private static Path createRestrictedTempFile() throws IOException {
-    final FileAttribute<?> perms =
-        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"));
-    try {
-      return Files.createTempFile("pyx-schema", ".sql", perms);
-    } catch (final UnsupportedOperationException e) {
-      throw new IOException(
-          "This filesystem does not support POSIX file permissions; refusing to create a "
-              + "temporary file without being able to restrict its permissions.", e);
+  private static final ExecutionOptions EXECUTION_OPTIONS = new ExecutionOptions() {
+    @Override
+    public Map<String, Object> getConfigurationValues() {
+      return Map.of();
     }
-  }
+
+    @Override
+    public boolean shouldManageNamespaces() {
+      return true;
+    }
+
+    @Override
+    public ExceptionHandler getExceptionHandler() {
+      return ExceptionHandlerLoggedImpl.INSTANCE;
+    }
+
+    @Override
+    public SchemaFilter getSchemaFilter() {
+      return DefaultSchemaFilter.INSTANCE;
+    }
+  };
+
+  private static final SourceDescriptor SOURCE_DESCRIPTOR = new SourceDescriptor() {
+    @Override
+    public SourceType getSourceType() {
+      return SourceType.METADATA;
+    }
+
+    @Override
+    public ScriptSourceInput getScriptSourceInput() {
+      return null;
+    }
+  };
 }
