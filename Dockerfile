@@ -2,7 +2,7 @@
 # build.properties.example and fill in real values first). Its contents -- including DB
 # credentials -- get baked into this image via Maven resource filtering, so treat the built
 # image the same way you'd treat that file: don't push it anywhere outside your own network.
-FROM maven:3.9.16-eclipse-temurin-8-noble
+FROM maven:3.9.16-eclipse-temurin-25-noble
 
 WORKDIR /app
 

@@ -357,12 +357,14 @@ cah.$.AjaxOperation.PLAY_CARD = "pc";
 cah.$.AjaxOperation.ADD_CARDSET = "acs";
 cah.$.AjaxOperation.CHANGE_GAME_OPTIONS = "cgo";
 cah.$.AjaxOperation.GET_GAME_INFO = "ggi";
+cah.$.AjaxOperation.GAME_HOST = "GH";
 cah.$.AjaxOperation.GET_CARDS = "gc";
 cah.$.AjaxOperation.ADMIN_SET_VERBOSE_LOG = "svl";
 cah.$.AjaxOperation.REGISTER = "r";
 cah.$.AjaxOperation.WHOIS = "Wi";
 cah.$.AjaxOperation.KICK = "K";
 cah.$.AjaxOperation.FIRST_LOAD = "fl";
+cah.$.AjaxOperation.GAME_SKIP = "GS";
 cah.$.AjaxOperation.REMOVE_CARDSET = "rcs";
 cah.$.AjaxOperation.START_GAME = "sg";
 cah.$.AjaxOperation.LOG_OUT = "lo";
@@ -372,8 +374,6 @@ cah.$.AjaxOperation.STOP_GAME = "Sg";
 cah.$.AjaxOperation.GAME_CHAT = "GC";
 cah.$.AjaxOperation.SPECTATE_GAME = "vg";
 cah.$.AjaxOperation.JUDGE_SELECT = "js";
-cah.$.AjaxOperation.GAME_HOST = "GH";
-cah.$.AjaxOperation.GAME_SKIP = "GS";
 
 cah.$.ReconnectNextAction = function() {
   // Dummy constructor to make Eclipse auto-complete.
