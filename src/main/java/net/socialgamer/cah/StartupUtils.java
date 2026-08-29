@@ -110,7 +110,14 @@ public class StartupUtils extends GuiceServletContextListener {
     final ServletContext context = contextEvent.getServletContext();
 
     final Injector injector = (Injector) context.getAttribute(INJECTOR);
-    injector.getInstance(DiscordNotifier.class).notify("PYX server is stopping.");
+    // Block briefly: this is one of the last things done before the process exits, and a plain
+    // fire-and-forget async send would otherwise usually get cut off before it's actually sent.
+    try {
+      injector.getInstance(DiscordNotifier.class).notify("PYX server is stopping.")
+          .get(4, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      LOG.warn("Discord stop notification did not complete", e);
+    }
 
     final ScheduledThreadPoolExecutor timer = injector
         .getInstance(ScheduledThreadPoolExecutor.class);

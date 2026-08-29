@@ -15,6 +15,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -45,13 +46,16 @@ public class DiscordNotifier {
   }
 
   /**
-   * Post {@code message} to the configured webhook. A no-op if none is configured. Sends
-   * asynchronously and never throws; failures are logged and otherwise ignored, since a
-   * notification failure should never affect server startup/shutdown.
+   * Post {@code message} to the configured webhook. A no-op if none is configured. Never throws;
+   * failures are logged and otherwise ignored, since a notification failure should never affect
+   * server startup/shutdown. The returned future completes when the send attempt is done (whether
+   * it succeeded or not) -- callers that fire this right before the process exits (e.g. on server
+   * shutdown) must wait on it with a bounded timeout, since a plain fire-and-forget async request
+   * can get cut off by JVM exit before it's actually sent.
    */
-  public void notify(final String message) {
+  public CompletableFuture<Void> notify(final String message) {
     if (StringUtils.isBlank(webhookUrl)) {
-      return;
+      return CompletableFuture.completedFuture(null);
     }
 
     final JSONObject payload = new JSONObject();
@@ -67,16 +71,17 @@ public class DiscordNotifier {
           .build();
     } catch (final IllegalArgumentException e) {
       LOG.error("Invalid Discord webhook URL", e);
-      return;
+      return CompletableFuture.completedFuture(null);
     }
 
-    httpClient.sendAsync(request, HttpResponse.BodyHandlers.discarding())
-        .whenComplete((response, throwable) -> {
+    return httpClient.sendAsync(request, HttpResponse.BodyHandlers.discarding())
+        .handle((response, throwable) -> {
           if (throwable != null) {
             LOG.error("Unable to send Discord webhook notification", throwable);
           } else if (response.statusCode() >= 300) {
             LOG.error("Discord webhook returned HTTP {}", response.statusCode());
           }
+          return null;
         });
   }
 }
