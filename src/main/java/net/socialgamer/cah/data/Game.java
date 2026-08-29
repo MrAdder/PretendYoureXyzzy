@@ -422,8 +422,7 @@ public class Game {
   /**
    * Broadcast a message to all players in this game.
    *
-   * @param type       Type of message to broadcast. This determines the order the messages are returned by
-   *                   priority.
+   * @param type       Type of message to broadcast.
    * @param masterData Message data to broadcast.
    */
   public void broadcastToPlayers(final MessageType type,

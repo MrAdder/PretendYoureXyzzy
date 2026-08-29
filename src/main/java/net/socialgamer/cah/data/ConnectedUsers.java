@@ -270,8 +270,7 @@ public class ConnectedUsers {
    * @param broadcastTo
    *          List of users to broadcast the message to.
    * @param type
-   *          Type of message to broadcast. This determines the order the messages are returned by
-   *          priority.
+   *          Type of message to broadcast.
    * @param masterData
    *          Message data to broadcast.
    */
