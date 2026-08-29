@@ -12,6 +12,24 @@ jobs:
     if: github.actor == 'dependabot[bot]'
 
     steps:
+      - name: Install gh CLI
+        run: |
+          set -euo pipefail
+          if command -v gh >/dev/null 2>&1; then
+            exit 0
+          fi
+          GH_VERSION=2.98.0
+          case "$(uname -m)" in
+            x86_64) GH_ARCH=amd64 ;;
+            aarch64|arm64) GH_ARCH=arm64 ;;
+            *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+          esac
+          curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${GH_ARCH}.tar.gz" \
+            -o /tmp/gh.tar.gz
+          mkdir -p /tmp/gh-install
+          tar -xzf /tmp/gh.tar.gz -C /tmp/gh-install --strip-components=1
+          echo "/tmp/gh-install/bin" >> "$GITHUB_PATH"
+
       - name: Enable auto-merge for this PR
         run: gh pr merge --auto --squash "$PR_URL"
         env:
