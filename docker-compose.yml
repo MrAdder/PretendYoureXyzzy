@@ -3,14 +3,32 @@ services:
     build: .
     container_name: pyx
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     # Point Nginx Proxy Manager's proxy host at <this-machine's-IP>:8080 (or, if NPM also runs in
     # Docker on this host, drop this ports mapping and put both containers on the same Docker
     # network instead, then point NPM at http://pyx:8080).
     ports:
       - "8080:8080"
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: pyx-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pyx
+      POSTGRES_USER: pyx
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
-      # Matches the VOLUME in the Dockerfile: persists the sqlite DB across recreation.
-      - pyx-data:/data
+      - pyx-postgres-data:/var/lib/postgresql/data
+      # Only runs against a fresh (empty) volume: creates the schema and imports the card catalog.
+      - ./cah_cards.sql:/docker-entrypoint-initdb.d/01-cah_cards.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pyx -d pyx"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
-  pyx-data:
+  pyx-postgres-data:

@@ -79,17 +79,18 @@ pyx.game.min_blank_card_limit=0
 pyx.game.default_blank_card_limit=0
 pyx.game.max_blank_card_limit=30
 
-# for production use, use postgres
-#hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-#hibernate.driver_class=org.postgresql.Driver
-#hibernate.url=jdbc:postgresql://localhost/pyx
+# for production use, use postgres. "postgres" as the host works when running via the bundled
+# docker-compose.yml (it's the postgres service's name on the shared Docker network); the
+# password below must match POSTGRES_PASSWORD in .env.
+hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+hibernate.driver_class=org.postgresql.Driver
+hibernate.url=jdbc:postgresql://postgres:5432/pyx
 
-# for local use, you can also use sqlite
-hibernate.dialect=org.hibernate.community.dialect.SQLiteDialect
-hibernate.driver_class=org.sqlite.JDBC
-hibernate.url=jdbc:sqlite:pyx.sqlite
+# for local use, you can also use sqlite instead
+#hibernate.dialect=org.hibernate.community.dialect.SQLiteDialect
+#hibernate.driver_class=org.sqlite.JDBC
+#hibernate.url=jdbc:sqlite:pyx.sqlite
 
-# these likely need specified even with sqlite, even though they don't matter
 hibernate.username=pyx
 hibernate.password=CorrectHorseBatteryStaple
 
