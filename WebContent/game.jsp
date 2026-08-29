@@ -55,6 +55,7 @@ boolean showAddCustomDeckJson = injector.getInstance(Key.get(new TypeLiteral<Boo
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <title>Pretend You're Xyzzy</title>
+<script type="text/javascript" src="js/cah.theme.js"></script>
 <script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
 <script type="text/javascript" src="js/jquery-migrate-1.2.1.js"></script>
 <script type="text/javascript" src="js/jquery.cookie.js"></script>
@@ -163,6 +164,7 @@ boolean showAddCustomDeckJson = injector.getInstance(Key.get(new TypeLiteral<Boo
           title="Open a new window to view all cards in the game."
           onclick="window.open('viewcards.jsp', 'viewcards');" />
       <input type="button" id="logout" value="Log out" />
+      <input type="button" id="theme_toggle" value="Toggle Dark Mode" onclick="pyxToggleTheme();" />
     </div>
   </div>
   <div id="main">
