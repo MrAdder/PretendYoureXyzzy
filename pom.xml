@@ -162,6 +162,35 @@
               <!-- Filtered -->
               <resource>${project.build.directory}/ZY</resource>
             </resourceBases>
+            <!-- Jetty hides its own org.eclipse.jetty.* runtime classes from the webapp by default
+                 (WebAppContext.__dftServerClasses); DiscordSessionCookieFilter needs
+                 org.eclipse.jetty.server.Response and org.eclipse.jetty.http.HttpHeader/HttpFields
+                 to rewrite the session cookie's Set-Cookie header for Discord Activity compatibility
+                 (see that class's javadoc). This is __dftServerClasses verbatim (confirmed against
+                 the pinned jetty-maven-plugin version above) plus two negated entries at the end,
+                 carving out just those two subpackages; everything else stays hidden as before. -->
+            <serverClasses>
+              <serverClass>-org.eclipse.jetty.server.session.SessionData</serverClass>
+              <serverClass>-org.eclipse.jetty.jmx.</serverClass>
+              <serverClass>-org.eclipse.jetty.util.annotation.</serverClass>
+              <serverClass>-org.eclipse.jetty.continuation.</serverClass>
+              <serverClass>-org.eclipse.jetty.jndi.</serverClass>
+              <serverClass>-org.eclipse.jetty.jaas.</serverClass>
+              <serverClass>-org.eclipse.jetty.servlets.</serverClass>
+              <serverClass>-org.eclipse.jetty.servlet.DefaultServlet</serverClass>
+              <serverClass>-org.eclipse.jetty.servlet.NoJspServlet</serverClass>
+              <serverClass>-org.eclipse.jetty.jsp.</serverClass>
+              <serverClass>-org.eclipse.jetty.servlet.listener.</serverClass>
+              <serverClass>-org.eclipse.jetty.websocket.</serverClass>
+              <serverClass>-org.eclipse.jetty.apache.</serverClass>
+              <serverClass>-org.eclipse.jetty.util.log.</serverClass>
+              <serverClass>-org.eclipse.jetty.alpn.</serverClass>
+              <serverClass>org.objectweb.asm.</serverClass>
+              <serverClass>org.eclipse.jdt.</serverClass>
+              <serverClass>org.eclipse.jetty.</serverClass>
+              <serverClass>-org.eclipse.jetty.server.</serverClass>
+              <serverClass>-org.eclipse.jetty.http.</serverClass>
+            </serverClasses>
           </webApp>
           <scanTargets>
             <scanTarget>src/main/filtered-resources</scanTarget>
@@ -295,6 +324,16 @@
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
       <version>3.0.1</version>
+    </dependency>
+    <dependency>
+      <!-- Only for DiscordSessionCookieFilter, which has to reach below the servlet API to rewrite
+           the session cookie's Set-Cookie header (SameSite/Partitioned aren't expressible through
+           javax.servlet.http.Cookie). Provided scope: supplied by jetty-maven-plugin at runtime,
+           must match its version exactly since this depends on Jetty's own (non-API) classes. -->
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>9.4.56.v20240826</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.xerial</groupId>
