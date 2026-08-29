@@ -121,23 +121,6 @@
         <artifactId>maven-war-plugin</artifactId>
         <version>3.5.1</version>
 
-        <!-- for exploded war -->
-        <!--
-        <executions>
-          <execution>
-            <id>default-war</id>
-            <phase>none</phase>
-          </execution>
-          <execution>
-            <id>war-exploded</id>
-            <phase>package</phase>
-            <goals>
-              <goal>exploded</goal>
-            </goals>
-          </execution>
-        </executions>
-        -->
-
         <configuration>
           <webResources>
             <resource>
@@ -167,10 +150,11 @@
         <version>9.4.56.v20240826</version>
 
         <configuration>
-          <!-- Uncomment this to enable JMX in Jetty for debugging. -->
-          <!-- <jettyXml>${appserver.web-inf.dir}/jetty-jmx.xml</jettyXml> -->
+          <!-- To enable JMX in Jetty for debugging, add:
+               <jettyXml>${appserver.web-inf.dir}/jetty-jmx.xml</jettyXml> -->
           <webApp>
-            <!--<defaultsDescriptor>${project.basedir}/jetty-defaults.xml</defaultsDescriptor> -->
+            <!-- To use a custom Jetty defaults descriptor, add to webApp:
+                 <defaultsDescriptor>${project.basedir}/jetty-defaults.xml</defaultsDescriptor> -->
             <descriptor>${project.build.directory}/${project.build.artifact.name}/WEB-INF/web.xml</descriptor>
             <resourceBases>
               <!-- Non-filtered -->

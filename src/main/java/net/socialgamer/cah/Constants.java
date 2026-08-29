@@ -46,6 +46,8 @@ public class Constants {
   public static final int CHAT_FLOOD_TIME = 30 * 1000;
   public static final int CHAT_MAX_LENGTH = 200;
 
+  private static final String GAME_STATE_IN_PROGRESS = "In Progress";
+
   /**
    * Reason why a client disconnected.
    */
@@ -580,15 +582,15 @@ public class Constants {
   public enum Sigil {
     ADMIN("@"), ID_CODE("+"), NORMAL_USER("");
 
-    private final String sigil;
+    private final String sigilText;
 
-    Sigil(final String sigil) {
-      this.sigil = sigil;
+    Sigil(final String sigilText) {
+      this.sigilText = sigilText;
     }
 
     @Override
     public String toString() {
-      return sigil;
+      return sigilText;
     }
   }
 
@@ -695,10 +697,10 @@ public class Constants {
    * A game's current state.
    */
   public enum GameState implements Localizable {
-    JUDGING("j", "In Progress"),
+    JUDGING("j", GAME_STATE_IN_PROGRESS),
     LOBBY("l", "Not Started"),
-    PLAYING("p", "In Progress"),
-    ROUND_OVER("ro", "In Progress");
+    PLAYING("p", GAME_STATE_IN_PROGRESS),
+    ROUND_OVER("ro", GAME_STATE_IN_PROGRESS);
 
     private final String state;
     private final String message;
@@ -923,5 +925,8 @@ public class Constants {
    */
   public class SessionAttribute {
     public static final String USER = "user";
+
+    private SessionAttribute() {
+    }
   }
 }
