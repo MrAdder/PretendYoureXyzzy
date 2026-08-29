@@ -1,0 +1,16 @@
+services:
+  pyx:
+    build: .
+    container_name: pyx
+    restart: unless-stopped
+    # Point Nginx Proxy Manager's proxy host at <this-machine's-IP>:8080 (or, if NPM also runs in
+    # Docker on this host, drop this ports mapping and put both containers on the same Docker
+    # network instead, then point NPM at http://pyx:8080).
+    ports:
+      - "8080:8080"
+    volumes:
+      # Matches the VOLUME in the Dockerfile: persists the sqlite DB across recreation.
+      - pyx-data:/data
+
+volumes:
+  pyx-data:
