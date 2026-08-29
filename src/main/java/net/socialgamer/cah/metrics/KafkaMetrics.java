@@ -73,8 +73,15 @@ public class KafkaMetrics implements Metrics {
 
   // 0.1: initial version
   // 0.2: added cardDealt
-  private static final String metricsVersion = "0.2";
+  private static final String METRICS_VERSION = "0.2";
   private static final Logger LOG = LogManager.getLogger(KafkaMetrics.class);
+
+  private static final String DISABLED_DEFAULT = "false";
+
+  private static final String KEY_SESSION_ID = "sessionId";
+  private static final String KEY_GAME_ID = "gameId";
+  private static final String KEY_IS_CUSTOM = "isCustom";
+  private static final String KEY_WATERMARK = "watermark";
 
   private final ProducerCallback callback = new ProducerCallback();
   private final String build;
@@ -87,7 +94,7 @@ public class KafkaMetrics implements Metrics {
   public KafkaMetrics(final Properties properties) {
     build = properties.getProperty("pyx.build");
     topic = properties.getProperty("kafka.topic");
-    LOG.info("Sending metrics to Kafka topic " + topic);
+    LOG.info("Sending metrics to Kafka topic {}", topic);
     producerProps = getProducerProps(properties);
     tryEnsureProducer();
   }
@@ -103,20 +110,20 @@ public class KafkaMetrics implements Metrics {
     props.put(ProducerConfig.CLIENT_ID_CONFIG, "pyx-" + inProps.getProperty("pyx.build"));
     props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, TimeUnit.SECONDS.toMillis(5));
 
-    if (Boolean.valueOf(inProps.getProperty("kafka.ssl", "false"))) {
+    if (Boolean.parseBoolean(inProps.getProperty("kafka.ssl", DISABLED_DEFAULT))) {
       props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
       props.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
           inProps.getProperty("kafka.truststore.path"));
       props.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
           inProps.getProperty("kafka.truststore.password"));
 
-      if (Boolean.valueOf(inProps.getProperty("kafka.ssl.usekey", "false"))) {
+      if (Boolean.parseBoolean(inProps.getProperty("kafka.ssl.usekey", DISABLED_DEFAULT))) {
         props.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, inProps.get("kafka.keystore.path"));
         props.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, inProps.get("kafka.keystore.password"));
         props.put(SslConfigs.SSL_KEY_PASSWORD_CONFIG, inProps.get("kafka.key.password"));
       }
 
-      if (Boolean.valueOf(inProps.getProperty("kafka.sasl", "false"))) {
+      if (Boolean.parseBoolean(inProps.getProperty("kafka.sasl", DISABLED_DEFAULT))) {
         // overwrite this
         props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
         props.put(SaslConfigs.SASL_JAAS_CONFIG, String.format(
@@ -161,7 +168,7 @@ public class KafkaMetrics implements Metrics {
         LOG.info("Attempting to create producer.");
         newProducer = new KafkaProducer<>(producerProps);
         final List<PartitionInfo> info = newProducer.partitionsFor(topic);
-        LOG.info(String.format("Topic %s has %d partitions.", topic, info.size()));
+        LOG.info("Topic {} has {} partitions.", topic, info.size());
         final Producer<String, String> oldProducer = producer;
         producer = newProducer;
         if (null != oldProducer) {
@@ -170,7 +177,7 @@ public class KafkaMetrics implements Metrics {
         }
         LOG.info("Producer created.");
       } catch (final Exception e) {
-        LOG.error("Unable to retrieve partition info for topic " + topic, e);
+        LOG.error("Unable to retrieve partition info for topic {}", topic, e);
         if (null != newProducer) {
           LOG.info("Closing failed new producer.");
           newProducer.close();
@@ -191,12 +198,12 @@ public class KafkaMetrics implements Metrics {
     trace("%s", json);
     tryEnsureProducer();
     if (null != producer) {
-      final ProducerRecord<String, String> record = new ProducerRecord<>(topic, null, json);
+      final ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topic, null, json);
       // Certain situations where the broker is unavailable may cause this to actually block briefly
       // depending on which thread is doing what. This can cause connection issues for pyx clients.
-      producer.send(record, callback);
+      producer.send(producerRecord, callback);
     } else {
-      LOG.warn("Dropping event " + json);
+      LOG.warn("Dropping event {}", json);
     }
   }
 
@@ -229,7 +236,7 @@ public class KafkaMetrics implements Metrics {
     ret.put("build", build);
     ret.put("type", type);
     ret.put("data", data);
-    ret.put("version", metricsVersion);
+    ret.put("version", METRICS_VERSION);
     return ret;
   }
 
@@ -250,7 +257,7 @@ public class KafkaMetrics implements Metrics {
 
     final Map<String, Object> data = new HashMap<>();
     data.put("persistentId", persistentId);
-    data.put("sessionId", sessionId);
+    data.put(KEY_SESSION_ID, sessionId);
 
     final Map<String, Object> browser = new HashMap<>();
     browser.put("name", agentName);
@@ -290,7 +297,7 @@ public class KafkaMetrics implements Metrics {
     trace("%s", sessionId);
 
     final Map<String, Object> data = new HashMap<>();
-    data.put("sessionId", sessionId);
+    data.put(KEY_SESSION_ID, sessionId);
     send(getEventMap("userDisconnect", data));
   }
 
@@ -301,7 +308,7 @@ public class KafkaMetrics implements Metrics {
         hasPassword);
 
     final Map<String, Object> data = new HashMap<>();
-    data.put("gameId", gameId);
+    data.put(KEY_GAME_ID, gameId);
     data.put("blankCardsInDeck", blanks);
     data.put("maxPlayers", maxPlayers);
     data.put("scoreGoal", scoreGoal);
@@ -312,7 +319,7 @@ public class KafkaMetrics implements Metrics {
       final Map<String, Object> deckInfo = new HashMap<>();
       // if we ever have more than cardcast for custom cards, this needs updated to indicate which
       // custom deck source, but will still be correct for this specific flag
-      deckInfo.put("isCustom", !(deck instanceof PyxCardSet));
+      deckInfo.put(KEY_IS_CUSTOM, !(deck instanceof PyxCardSet));
       deckInfo.put("id", deck.getId());
       // TODO(?) don't include these data for non-custom decks?
       deckInfo.put("name", deck.getName());
@@ -333,7 +340,7 @@ public class KafkaMetrics implements Metrics {
         cards);
 
     final Map<String, Object> data = new HashMap<>();
-    data.put("gameId", gameId);
+    data.put(KEY_GAME_ID, gameId);
     data.put("roundId", roundId);
     data.put("judgeSessionId", judgeSessionId);
     data.put("winnerSessionId", winnerSessionId);
@@ -345,11 +352,11 @@ public class KafkaMetrics implements Metrics {
       for (final WhiteCard card : cardsByUser.getValue()) {
         final Map<String, Object> cardInfo = new HashMap<>();
         // same re: more custom deck sources
-        cardInfo.put("isCustom", !(card instanceof PyxWhiteCard));
+        cardInfo.put(KEY_IS_CUSTOM, !(card instanceof PyxWhiteCard));
         cardInfo.put("isWriteIn", card.isWriteIn());
         // negative IDs would be custom: either blank or cardcast. they are not stable.
         cardInfo.put("id", card.getId());
-        cardInfo.put("watermark", card.getWatermark());
+        cardInfo.put(KEY_WATERMARK, card.getWatermark());
         cardInfo.put("text", card.getText());
         userCards.add(cardInfo);
       }
@@ -359,10 +366,10 @@ public class KafkaMetrics implements Metrics {
 
     final Map<String, Object> blackCardData = new HashMap<>();
     // same re: more custom deck sources
-    blackCardData.put("isCustom", !(blackCard instanceof PyxBlackCard));
+    blackCardData.put(KEY_IS_CUSTOM, !(blackCard instanceof PyxBlackCard));
     // negative IDs would be custom: either blank or cardcast. they are not stable.
     blackCardData.put("id", blackCard.getId());
-    blackCardData.put("watermark", blackCard.getWatermark());
+    blackCardData.put(KEY_WATERMARK, blackCard.getWatermark());
     blackCardData.put("text", blackCard.getText());
     blackCardData.put("draw", blackCard.getDraw());
     blackCardData.put("pick", blackCard.getPick());
@@ -377,17 +384,17 @@ public class KafkaMetrics implements Metrics {
     trace("%s, %s, %s, %d", gameId, sessionId, card, dealSeq);
 
     final Map<String, Object> data = new HashMap<>();
-    data.put("gameId", gameId);
-    data.put("sessionId", sessionId);
+    data.put(KEY_GAME_ID, gameId);
+    data.put(KEY_SESSION_ID, sessionId);
     data.put("dealSeq", dealSeq);
 
     final Map<String, Object> whiteCardData = new HashMap<>();
     // same re: more custom deck sources
-    whiteCardData.put("isCustom", !(card instanceof PyxWhiteCard));
+    whiteCardData.put(KEY_IS_CUSTOM, !(card instanceof PyxWhiteCard));
     whiteCardData.put("isWriteIn", card.isWriteIn());
     // negative IDs would be custom: either blank or cardcast. they are not stable.
     whiteCardData.put("id", card.getId());
-    whiteCardData.put("watermark", card.getWatermark());
+    whiteCardData.put(KEY_WATERMARK, card.getWatermark());
     whiteCardData.put("text", card.getText());
     data.put("card", whiteCardData);
 

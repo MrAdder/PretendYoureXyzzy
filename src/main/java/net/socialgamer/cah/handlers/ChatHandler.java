@@ -26,6 +26,7 @@ package net.socialgamer.cah.handlers;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpSession;
 
 import org.apache.logging.log4j.LogManager;
@@ -73,8 +74,6 @@ public class ChatHandler extends Handler {
   @Override
   public Map<ReturnableData, Object> handle(final RequestWrapper request,
       final HttpSession session) {
-    final Map<ReturnableData, Object> data = new HashMap<ReturnableData, Object>();
-
     final User user = (User) session.getAttribute(SessionAttribute.USER);
     assert (user != null);
     final boolean wall = request.getParameter(AjaxRequest.WALL) != null
@@ -84,67 +83,85 @@ public class ChatHandler extends Handler {
 
     if (request.getParameter(AjaxRequest.MESSAGE) == null) {
       return error(ErrorCode.NO_MSG_SPECIFIED);
-    } else if (wall && !user.isAdmin()) {
+    }
+    if (wall && !user.isAdmin()) {
       return error(ErrorCode.NOT_ADMIN);
-    } else if (!globalChatEnabled && !user.isAdmin()) {
+    }
+    if (!globalChatEnabled && !user.isAdmin()) {
       // global chat can be turned off in the properties file
       return error(ErrorCode.NOT_ADMIN);
-    } else {
-      final String message = request.getParameter(AjaxRequest.MESSAGE).trim();
-
-      LongPollEvent event = LongPollEvent.CHAT;
-      final ChatFilter.Result filterResult = chatFilter.filterGlobal(user, message);
-      switch (filterResult) {
-        case CAPSLOCK:
-          return error(ErrorCode.CAPSLOCK);
-        case DROP_MESSAGE:
-          // Don't tell the user we dropped it, and don't send it to everyone else...
-          // but let any online admins know about it
-          event = LongPollEvent.FILTERED_CHAT;
-          break;
-        case NO_MESSAGE:
-          return error(ErrorCode.NO_MSG_SPECIFIED);
-        case NOT_ENOUGH_SPACES:
-          return error(ErrorCode.NOT_ENOUGH_SPACES);
-        case OK:
-          // nothing to do
-          break;
-        case REPEAT:
-          return error(ErrorCode.REPEAT_MESSAGE);
-        case REPEAT_WORDS:
-          return error(ErrorCode.REPEATED_WORDS);
-        case TOO_FAST:
-          return error(ErrorCode.TOO_FAST);
-        case TOO_LONG:
-          return error(ErrorCode.MESSAGE_TOO_LONG);
-        case TOO_MANY_SPECIALS:
-          return error(ErrorCode.TOO_MANY_SPECIAL_CHARACTERS);
-        default:
-          LOG.error(String.format("Unknown chat filter result %s", filterResult));
-      }
-
-      final HashMap<ReturnableData, Object> broadcastData = new HashMap<ReturnableData, Object>();
-      broadcastData.put(LongPollResponse.EVENT, event.toString());
-      broadcastData.put(LongPollResponse.FROM, user.getNickname());
-      broadcastData.put(LongPollResponse.MESSAGE, message);
-      broadcastData.put(LongPollResponse.ID_CODE, user.getIdCode());
-      broadcastData.put(LongPollResponse.SIGIL, user.getSigil().toString());
-      if (user.isAdmin()) {
-        broadcastData.put(LongPollResponse.FROM_ADMIN, true);
-      }
-      if (wall) {
-        broadcastData.put(LongPollResponse.WALL, true);
-      }
-      if (emote) {
-        broadcastData.put(LongPollResponse.EMOTE, true);
-      }
-      if (LongPollEvent.CHAT == event) {
-        users.broadcastToAll(MessageType.CHAT, broadcastData);
-      } else {
-        users.broadcastToList(users.getAdmins(), MessageType.CHAT, broadcastData);
-      }
     }
 
-    return data;
+    final String message = request.getParameter(AjaxRequest.MESSAGE).trim();
+    final ChatFilter.Result filterResult = chatFilter.filterGlobal(user, message);
+    final ErrorCode filterError = errorForFilterResult(filterResult);
+    if (filterError != null) {
+      return error(filterError);
+    }
+
+    broadcastMessage(user, message, wall, emote, filterResult);
+    return new HashMap<ReturnableData, Object>();
+  }
+
+  /**
+   * @return The error to return to the client for a chat filter result that should block the
+   *         message, or {@code null} if the message should be broadcast.
+   */
+  @Nullable
+  private ErrorCode errorForFilterResult(final ChatFilter.Result filterResult) {
+    switch (filterResult) {
+      case CAPSLOCK:
+        return ErrorCode.CAPSLOCK;
+      case NO_MESSAGE:
+        return ErrorCode.NO_MSG_SPECIFIED;
+      case NOT_ENOUGH_SPACES:
+        return ErrorCode.NOT_ENOUGH_SPACES;
+      case REPEAT:
+        return ErrorCode.REPEAT_MESSAGE;
+      case REPEAT_WORDS:
+        return ErrorCode.REPEATED_WORDS;
+      case TOO_FAST:
+        return ErrorCode.TOO_FAST;
+      case TOO_LONG:
+        return ErrorCode.MESSAGE_TOO_LONG;
+      case TOO_MANY_SPECIALS:
+        return ErrorCode.TOO_MANY_SPECIAL_CHARACTERS;
+      case DROP_MESSAGE, OK:
+      default:
+        return null;
+    }
+  }
+
+  private void broadcastMessage(final User user, final String message, final boolean wall,
+      final boolean emote, final ChatFilter.Result filterResult) {
+    LongPollEvent event = LongPollEvent.CHAT;
+    if (filterResult == ChatFilter.Result.DROP_MESSAGE) {
+      // Don't tell the user we dropped it, and don't send it to everyone else...
+      // but let any online admins know about it
+      event = LongPollEvent.FILTERED_CHAT;
+    } else if (filterResult != ChatFilter.Result.OK) {
+      LOG.error("Unknown chat filter result {}", filterResult);
+    }
+
+    final HashMap<ReturnableData, Object> broadcastData = new HashMap<ReturnableData, Object>();
+    broadcastData.put(LongPollResponse.EVENT, event.toString());
+    broadcastData.put(LongPollResponse.FROM, user.getNickname());
+    broadcastData.put(LongPollResponse.MESSAGE, message);
+    broadcastData.put(LongPollResponse.ID_CODE, user.getIdCode());
+    broadcastData.put(LongPollResponse.SIGIL, user.getSigil().toString());
+    if (user.isAdmin()) {
+      broadcastData.put(LongPollResponse.FROM_ADMIN, true);
+    }
+    if (wall) {
+      broadcastData.put(LongPollResponse.WALL, true);
+    }
+    if (emote) {
+      broadcastData.put(LongPollResponse.EMOTE, true);
+    }
+    if (LongPollEvent.CHAT == event) {
+      users.broadcastToAll(MessageType.CHAT, broadcastData);
+    } else {
+      users.broadcastToList(users.getAdmins(), MessageType.CHAT, broadcastData);
+    }
   }
 }

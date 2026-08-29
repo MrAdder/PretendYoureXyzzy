@@ -6,7 +6,6 @@ import java.util.Map;
 import javax.servlet.http.HttpSession;
 
 import com.google.inject.Provider;
-import net.socialgamer.cah.CahModule;
 import net.socialgamer.cah.Constants.AjaxOperation;
 import net.socialgamer.cah.Constants.AjaxRequest;
 import net.socialgamer.cah.Constants.ErrorCode;

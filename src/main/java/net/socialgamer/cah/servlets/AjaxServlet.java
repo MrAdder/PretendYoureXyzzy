@@ -96,6 +96,5 @@ public class AjaxServlet extends CahServlet {
     final Map<ReturnableData, Object> data = handler.handle(new RequestWrapper(request), hSession);
     data.put(AjaxResponse.SERIAL, serial);
     returnData(user, out, data);
-    return;
   }
 }

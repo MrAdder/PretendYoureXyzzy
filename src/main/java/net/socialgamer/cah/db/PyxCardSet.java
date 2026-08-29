@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -36,7 +37,8 @@ public class PyxCardSet extends CardSet {
   private String name;
   private String description;
   private boolean active;
-  private boolean base_deck;
+  @Column(name = "base_deck")
+  private boolean baseDeck;
   private int weight;
 
   @ManyToMany
@@ -97,11 +99,11 @@ public class PyxCardSet extends CardSet {
 
   @Override
   public boolean isBaseDeck() {
-    return base_deck;
+    return baseDeck;
   }
 
   public void setBaseDeck(final boolean baseDeck) {
-    this.base_deck = baseDeck;
+    this.baseDeck = baseDeck;
   }
 
   @Override

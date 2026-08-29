@@ -47,7 +47,7 @@ public abstract class GameHandler extends Handler {
 
   protected GameManager gameManager;
 
-  public GameHandler(final GameManager gameManager) {
+  protected GameHandler(final GameManager gameManager) {
     this.gameManager = gameManager;
   }
 

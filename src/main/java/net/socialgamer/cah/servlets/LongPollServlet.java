@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -62,14 +63,12 @@ public class LongPollServlet extends CahServlet {
    * Minimum amount of time before timing out and returning a no-op, in nanoseconds.
    */
   private static final long TIMEOUT_BASE = TimeUnit.SECONDS.toNanos(20);
-  //  private static final long TIMEOUT_BASE = 10 * 1000 * 1000;
 
   /**
    * Randomness factor added to minimum timeout duration, in nanoseconds. The maximum timeout delay
    * will be TIMEOUT_BASE + TIMEOUT_RANDOMNESS - 1.
    */
-  private static final double TIMEOUT_RANDOMNESS = TimeUnit.SECONDS.toNanos(5);
-  //  private static final double TIMEOUT_RANDOMNESS = 0;
+  private static final long TIMEOUT_RANDOMNESS = TimeUnit.SECONDS.toNanos(5);
 
   /**
    * The maximum number of messages which will be returned to a client during a single poll
@@ -96,7 +95,7 @@ public class LongPollServlet extends CahServlet {
     final long start = System.nanoTime();
     // Pick a random timeout point between [TIMEOUT_BASE, TIMEOUT_BASE + TIMEOUT_RANDOMNESS)
     // nanoseconds from now.
-    final long end = start + TIMEOUT_BASE + (long) (Math.random() * TIMEOUT_RANDOMNESS);
+    final long end = start + TIMEOUT_BASE + ThreadLocalRandom.current().nextLong(TIMEOUT_RANDOMNESS);
     final User user = (User) hSession.getAttribute(SessionAttribute.USER);
     assert (user != null);
     user.contactedServer();
@@ -104,7 +103,8 @@ public class LongPollServlet extends CahServlet {
       try {
         user.waitForNewMessageNotification(TimeUnit.NANOSECONDS.toMillis(end - System.nanoTime()));
       } catch (final InterruptedException ie) {
-        // pass
+        Thread.currentThread().interrupt();
+        break;
       }
     }
     if (user.hasQueuedMessages()) {
@@ -114,11 +114,11 @@ public class LongPollServlet extends CahServlet {
         // in as few round-trips as possible while not waiting too long.
         Thread.sleep(WAIT_FOR_MORE_DELAY);
       } catch (final InterruptedException ie) {
-        // pass
+        Thread.currentThread().interrupt();
       }
       final Collection<QueuedMessage> msgs = user.getNextQueuedMessages(MAX_MESSAGES_PER_POLL);
       // just in case...
-      if (msgs.size() > 0) {
+      if (!msgs.isEmpty()) {
         final List<Map<ReturnableData, Object>> data =
             new ArrayList<Map<ReturnableData, Object>>(msgs.size());
         for (final QueuedMessage qm : msgs) {

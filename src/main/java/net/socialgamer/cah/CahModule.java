@@ -34,7 +34,6 @@ import javax.servlet.ServletContext;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.*;
-import net.socialgamer.cah.data.GameOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hibernate.Session;
@@ -58,6 +57,9 @@ import net.socialgamer.cah.metrics.UniqueIds;
 public class CahModule extends AbstractModule {
 
   private static final Logger LOG = LogManager.getLogger(CahModule.class);
+
+  private static final String DISABLED_DEFAULT = "false";
+  private static final String BLANK_PERMALINK_FORMAT_DEFAULT = "about:blank#%s";
 
   private final Properties properties = new Properties();
 
@@ -176,7 +178,7 @@ public class CahModule extends AbstractModule {
   @ShowGamePermalink
   Boolean provideShowGamePermalink() {
     synchronized (properties) {
-      return Boolean.valueOf(properties.getProperty("pyx.metrics.game.enabled", "false"));
+      return Boolean.valueOf(properties.getProperty("pyx.metrics.game.enabled", DISABLED_DEFAULT));
     }
   }
 
@@ -184,7 +186,7 @@ public class CahModule extends AbstractModule {
   @GamePermalinkUrlFormat
   String provideGamePermalinkUrlFormat() {
     synchronized (properties) {
-      return properties.getProperty("pyx.metrics.game.url_format", "about:blank#%s");
+      return properties.getProperty("pyx.metrics.game.url_format", BLANK_PERMALINK_FORMAT_DEFAULT);
     }
   }
 
@@ -192,7 +194,7 @@ public class CahModule extends AbstractModule {
   @ShowRoundPermalink
   Boolean provideShowRoundPermalink() {
     synchronized (properties) {
-      return Boolean.valueOf(properties.getProperty("pyx.metrics.round.enabled", "false"));
+      return Boolean.valueOf(properties.getProperty("pyx.metrics.round.enabled", DISABLED_DEFAULT));
     }
   }
 
@@ -200,7 +202,7 @@ public class CahModule extends AbstractModule {
   @RoundPermalinkUrlFormat
   String provideRoundPermalinkUrlFormat() {
     synchronized (properties) {
-      return properties.getProperty("pyx.metrics.round.url_format", "about:blank#%s");
+      return properties.getProperty("pyx.metrics.round.url_format", BLANK_PERMALINK_FORMAT_DEFAULT);
     }
   }
 
@@ -208,7 +210,7 @@ public class CahModule extends AbstractModule {
   @ShowSessionPermalink
   Boolean provideShowSessionPermalink() {
     synchronized (properties) {
-      return Boolean.valueOf(properties.getProperty("pyx.metrics.session.enabled", "false"));
+      return Boolean.valueOf(properties.getProperty("pyx.metrics.session.enabled", DISABLED_DEFAULT));
     }
   }
 
@@ -216,7 +218,7 @@ public class CahModule extends AbstractModule {
   @SessionPermalinkUrlFormat
   String provideSessionPermalinkUrlFormat() {
     synchronized (properties) {
-      return properties.getProperty("pyx.metrics.session.url_format", "about:blank#%s");
+      return properties.getProperty("pyx.metrics.session.url_format", BLANK_PERMALINK_FORMAT_DEFAULT);
     }
   }
 
@@ -224,7 +226,7 @@ public class CahModule extends AbstractModule {
   @ShowUserPermalink
   Boolean provideShowUserPermalink() {
     synchronized (properties) {
-      return Boolean.valueOf(properties.getProperty("pyx.metrics.user.enabled", "false"));
+      return Boolean.valueOf(properties.getProperty("pyx.metrics.user.enabled", DISABLED_DEFAULT));
     }
   }
 
@@ -232,7 +234,7 @@ public class CahModule extends AbstractModule {
   @UserPermalinkUrlFormat
   String provideUserPermalinkUrlFormat() {
     synchronized (properties) {
-      return properties.getProperty("pyx.metrics.user.url_format", "about:blank#%s");
+      return properties.getProperty("pyx.metrics.user.url_format", BLANK_PERMALINK_FORMAT_DEFAULT);
     }
   }
 
@@ -266,7 +268,7 @@ public class CahModule extends AbstractModule {
   Boolean getIncludeInactiveCardsets() {
     synchronized (properties) {
       return Boolean.valueOf(properties
-          .getProperty("pyx.server.include_inactive_cardsets", "false"));
+          .getProperty("pyx.server.include_inactive_cardsets", DISABLED_DEFAULT));
     }
   }
 

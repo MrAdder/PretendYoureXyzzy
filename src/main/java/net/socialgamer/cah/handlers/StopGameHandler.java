@@ -48,7 +48,7 @@ import com.google.inject.Inject;
  */
 public class StopGameHandler extends GameWithPlayerHandler {
 
-  protected final Logger logger = LogManager.getLogger(GameWithPlayerHandler.class);
+  protected final Logger logger = LogManager.getLogger(StopGameHandler.class);
 
   public static final String OP = AjaxOperation.STOP_GAME.toString();
 
@@ -67,8 +67,8 @@ public class StopGameHandler extends GameWithPlayerHandler {
     } else if (game.getState() == GameState.LOBBY) {
       return error(ErrorCode.ALREADY_STOPPED);
     } else {
-      logger.info(String.format("Game %d stopped by host %s. Players: %s", game.getId(), user,
-          game.getPlayers()));
+      logger.info("Game {} stopped by host {}. Players: {}", game.getId(), user,
+          game.getPlayers());
       game.resetState(false);
       return data;
     }

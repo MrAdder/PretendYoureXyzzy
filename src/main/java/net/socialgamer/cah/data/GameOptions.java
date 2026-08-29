@@ -29,7 +29,7 @@ import net.socialgamer.cah.CahModule.*;
 import net.socialgamer.cah.Constants.GameOptionData;
 import net.socialgamer.cah.JsonWrapper;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -97,14 +97,14 @@ public class GameOptions {
             }
         }
 
-        options.blanksInDeck = Math.max(options.minBlankCardLimit, Math.min(options.maxBlankCardLimit,
-                json.getInteger(GameOptionData.BLANKS_LIMIT, options.blanksInDeck)));
-        options.playerLimit = Math.max(options.minPlayerLimit, Math.min(options.maxPlayerLimit,
-                json.getInteger(GameOptionData.PLAYER_LIMIT, options.playerLimit)));
-        options.spectatorLimit = Math.max(options.minSpectatorLimit, Math.min(options.maxSpectatorLimit,
-                json.getInteger(GameOptionData.SPECTATOR_LIMIT, options.spectatorLimit)));
-        options.scoreGoal = Math.max(options.minScoreLimit, Math.min(options.maxScoreLimit,
-                json.getInteger(GameOptionData.SCORE_LIMIT, options.scoreGoal)));
+        options.blanksInDeck = Math.clamp(json.getInteger(GameOptionData.BLANKS_LIMIT, options.blanksInDeck),
+                options.minBlankCardLimit, options.maxBlankCardLimit);
+        options.playerLimit = Math.clamp(json.getInteger(GameOptionData.PLAYER_LIMIT, options.playerLimit),
+                options.minPlayerLimit, options.maxPlayerLimit);
+        options.spectatorLimit = Math.clamp(json.getInteger(GameOptionData.SPECTATOR_LIMIT, options.spectatorLimit),
+                options.minSpectatorLimit, options.maxSpectatorLimit);
+        options.scoreGoal = Math.clamp(json.getInteger(GameOptionData.SCORE_LIMIT, options.scoreGoal),
+                options.minScoreLimit, options.maxScoreLimit);
         options.timerMultiplier = json.getString(GameOptionData.TIMER_MULTIPLIER, options.timerMultiplier);
         options.password = json.getString(GameOptionData.PASSWORD, options.password);
 
@@ -139,7 +139,7 @@ public class GameOptions {
      * @return This game's general information: ID, host, state, player list, etc.
      */
     public Map<GameOptionData, Object> serialize(final boolean includePassword) {
-        final Map<GameOptionData, Object> info = new HashMap<GameOptionData, Object>();
+        final Map<GameOptionData, Object> info = new EnumMap<GameOptionData, Object>(GameOptionData.class);
 
         // Copy, rather than handing out the live set: this map often outlives the call (it gets
         // JSON-serialized later), and cardSetIds can be mutated concurrently by update().

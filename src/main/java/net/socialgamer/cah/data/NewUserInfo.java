@@ -1,16 +1,16 @@
 /**
- * Copyright (c) 2012, Andy Janata
+ * Copyright (c) 2012-2018, Andy Janata
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted
  * provided that the following conditions are met:
- * 
+ *
  * * Redistributions of source code must retain the above copyright notice, this list of conditions
  *   and the following disclaimer.
  * * Redistributions in binary form must reproduce the above copyright notice, this list of
  *   conditions and the following disclaimer in the documentation and/or other materials provided
  *   with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
  * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
@@ -21,51 +21,34 @@
  * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package net.socialgamer.cah.handlers;
+package net.socialgamer.cah.data;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.servlet.http.HttpSession;
-
-import net.socialgamer.cah.Constants.AjaxOperation;
-import net.socialgamer.cah.Constants.DisconnectReason;
-import net.socialgamer.cah.Constants.ReturnableData;
-import net.socialgamer.cah.Constants.SessionAttribute;
-import net.socialgamer.cah.RequestWrapper;
-import net.socialgamer.cah.data.ConnectedUsers;
-import net.socialgamer.cah.data.User;
-
-import com.google.inject.Inject;
-
+import javax.annotation.Nullable;
 
 /**
- * Handler to log out of the server.
- * 
- * @author Andy Janata (ajanata@socialgamer.net)
+ * Bundles the client-supplied properties needed to create a new {@link User}, so its constructor
+ * and Guice assisted-inject {@link User.Factory} don't need a long list of individual parameters.
  */
-public class LogoutHandler extends Handler {
+public final class NewUserInfo {
+  public final String nickname;
+  public final String idCode;
+  public final String hostname;
+  public final boolean isAdmin;
+  public final String persistentId;
+  @Nullable
+  public final String clientLanguage;
+  @Nullable
+  public final String clientAgent;
 
-  public static final String OP = AjaxOperation.LOG_OUT.toString();
-
-  private final ConnectedUsers users;
-
-  @Inject
-  public LogoutHandler(final ConnectedUsers users) {
-    this.users = users;
-  }
-
-  @Override
-  public Map<ReturnableData, Object> handle(final RequestWrapper request,
-      final HttpSession session) {
-    final Map<ReturnableData, Object> data = new HashMap<ReturnableData, Object>();
-
-    final User user = (User) session.getAttribute(SessionAttribute.USER);
-    assert (user != null);
-
-    user.noLongerValid();
-    users.removeUser(user, DisconnectReason.MANUAL);
-    session.invalidate();
-    return data;
+  public NewUserInfo(final String nickname, final String idCode, final String hostname,
+      final boolean isAdmin, final String persistentId, @Nullable final String clientLanguage,
+      @Nullable final String clientAgent) {
+    this.nickname = nickname;
+    this.idCode = idCode;
+    this.hostname = hostname;
+    this.isAdmin = isAdmin;
+    this.persistentId = persistentId;
+    this.clientLanguage = clientLanguage;
+    this.clientAgent = clientAgent;
   }
 }

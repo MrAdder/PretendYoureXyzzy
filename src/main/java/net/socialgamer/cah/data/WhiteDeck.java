@@ -67,12 +67,11 @@ public class WhiteDeck {
    *           There are no more cards in the deck.
    */
   public synchronized WhiteCard getNextCard() throws OutOfCardsException {
-    if (deck.size() == 0) {
+    if (deck.isEmpty()) {
       throw new OutOfCardsException();
     }
     // we have an ArrayList here, so this is faster
-    final WhiteCard card = deck.remove(deck.size() - 1);
-    return card;
+    return deck.remove(deck.size() - 1);
   }
 
   /**
@@ -106,8 +105,7 @@ public class WhiteDeck {
    * @return A newly created blank card.
    */
   private WhiteCard createBlankCard() {
-    final WhiteCard blank = new BlankWhiteCard(--lastBlankCardId);
-    return blank;
+    return new BlankWhiteCard(--lastBlankCardId);
   }
 
   /**

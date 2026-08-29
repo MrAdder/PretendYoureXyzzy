@@ -43,6 +43,7 @@ import net.socialgamer.cah.data.ConnectedUsers;
 import net.socialgamer.cah.data.QueuedMessage;
 import net.socialgamer.cah.data.QueuedMessage.MessageType;
 import net.socialgamer.cah.data.User;
+import net.socialgamer.cah.util.LogSanitizer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -89,11 +90,16 @@ public class BanHandler extends Handler {
       kickUser.enqueueMessage(qm);
 
       connectedUsers.removeUser(kickUser, DisconnectReason.BANNED);
-      logger.info(String.format("Banning %s (%s) by request of %s", kickUser.getNickname(), banIp,
-          user.getNickname()));
+      if (logger.isInfoEnabled()) {
+        logger.info("Banning {} ({}) by request of {}",
+            LogSanitizer.sanitize(kickUser.getNickname()), banIp, user.getNickname());
+      }
     } else {
       banIp = request.getParameter(AjaxRequest.NICKNAME);
-      logger.info(String.format("Banning %s by request of %s", banIp, user.getNickname()));
+      if (logger.isInfoEnabled()) {
+        logger.info("Banning {} by request of {}", LogSanitizer.sanitize(banIp),
+            user.getNickname());
+      }
     }
     banList.add(banIp);
 

@@ -54,7 +54,7 @@ public class UniqueIds implements Provider<String> {
 
   private static final Logger LOG = LogManager.getLogger(UniqueIds.class);
 
-  private static final String hostname;
+  private static final String HOSTNAME;
 
   private final AtomicLong counter = new AtomicLong(0);
   private final Date serverStarted;
@@ -65,9 +65,9 @@ public class UniqueIds implements Provider<String> {
       hn = InetAddress.getLocalHost().getHostName();
     } catch (final UnknownHostException e) {
       hn = UUID.randomUUID().toString();
-      LOG.warn(String.format("Unable to determine hostname, using %s instead.", hn));
+      LOG.warn("Unable to determine hostname, using {} instead.", hn);
     }
-    hostname = hn;
+    HOSTNAME = hn;
   }
 
   @Inject
@@ -78,6 +78,6 @@ public class UniqueIds implements Provider<String> {
   @Override
   public String get() {
     // hostname_started_seq
-    return String.format("%s_%d_%d", hostname, serverStarted.getTime(), counter.getAndIncrement());
+    return String.format("%s_%d_%d", HOSTNAME, serverStarted.getTime(), counter.getAndIncrement());
   }
 }

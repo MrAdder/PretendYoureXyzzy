@@ -38,7 +38,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.socialgamer.cah.CahModule;
 import net.socialgamer.cah.CahModule.*;
 import org.hibernate.Session;
 import org.junit.After;
@@ -96,7 +95,7 @@ public class GameManagerTest {
   };
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     cuMock = createMock(ConnectedUsers.class);
     userMock = createMock(User.class);
     metricsMock = createMock(Metrics.class);

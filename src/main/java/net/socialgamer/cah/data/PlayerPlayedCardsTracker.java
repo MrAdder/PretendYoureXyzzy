@@ -118,7 +118,7 @@ public class PlayerPlayedCardsTracker {
    */
   public synchronized List<WhiteCard> remove(final Player player) {
     final List<WhiteCard> cards = playerCardMap.remove(player);
-    if (cards != null && cards.size() > 0) {
+    if (cards != null && !cards.isEmpty()) {
       reverseIdMap.remove(cards.get(0).getId());
     }
     return cards;

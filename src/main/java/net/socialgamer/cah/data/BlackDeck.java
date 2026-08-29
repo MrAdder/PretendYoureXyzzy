@@ -63,12 +63,11 @@ public class BlackDeck {
    *           There are no more cards in the deck.
    */
   public synchronized BlackCard getNextCard() throws OutOfCardsException {
-    if (deck.size() == 0) {
+    if (deck.isEmpty()) {
       throw new OutOfCardsException();
     }
     // we have an ArrayList here, so this is faster
-    final BlackCard card = deck.remove(deck.size() - 1);
-    return card;
+    return deck.remove(deck.size() - 1);
   }
 
   /**

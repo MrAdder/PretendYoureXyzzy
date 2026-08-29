@@ -55,40 +55,40 @@ public class NoOpMetrics implements Metrics {
 
   @Override
   public void serverStart(final String startupId) {
-    LOG.trace(String.format("serverStarted(%s)", startupId));
+    LOG.trace("serverStarted({})", startupId);
   }
 
   @Override
   public void userConnect(final String persistentId, final String sessionId, final CityResponse geoIp,
       final String agentName, final String agentType, final String agentOs,
       final String agentLanguage) {
-    LOG.trace(String.format("newUser(%s, %s, %s, %s, %s, %s, %s)", persistentId, sessionId, geoIp,
-        agentName, agentType, agentOs, agentLanguage));
+    LOG.trace("newUser({}, {}, {}, {}, {}, {}, {})", persistentId, sessionId, geoIp,
+        agentName, agentType, agentOs, agentLanguage);
   }
 
   @Override
   public void userDisconnect(final String sessionId) {
-    LOG.trace(String.format("userDisconnect(%s)", sessionId));
+    LOG.trace("userDisconnect({})", sessionId);
   }
 
   @Override
   public void gameStart(final String gameId, final Collection<CardSet> decks, final int blanks,
       final int maxPlayers, final int scoreGoal, final boolean hasPassword) {
-    LOG.trace(String.format("gameStart(%s, %s, %d, %d, %d, %s)", gameId, decks.toArray(), blanks,
-        maxPlayers, scoreGoal, hasPassword));
+    LOG.trace("gameStart({}, {}, {}, {}, {}, {})", gameId, decks.toArray(), blanks,
+        maxPlayers, scoreGoal, hasPassword);
   }
 
   @Override
   public void roundComplete(final String gameId, final String roundId, final String judgeSessionId,
       final String winnerSessionId, final BlackCard blackCard,
       final Map<String, List<WhiteCard>> cards) {
-    LOG.trace(String.format("roundJudged(%s, %s, %s, %s, %s, %s)", gameId, roundId, judgeSessionId,
-        winnerSessionId, blackCard, cards));
+    LOG.trace("roundJudged({}, {}, {}, {}, {}, {})", gameId, roundId, judgeSessionId,
+        winnerSessionId, blackCard, cards);
   }
 
   @Override
   public void cardDealt(final String gameId, final String sessionId, final WhiteCard card,
       final long dealSeq) {
-    LOG.trace(String.format("cardDealt(%s, %s, %s, %d)", gameId, sessionId, card, dealSeq));
+    LOG.trace("cardDealt({}, {}, {}, {})", gameId, sessionId, card, dealSeq);
   }
 }

@@ -33,16 +33,20 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.inject.Injector;
 import com.google.inject.Key;
 
-import net.socialgamer.cah.CahModule;
 import net.socialgamer.cah.CahModule.*;
 import net.socialgamer.cah.StartupUtils;
 
 
 @WebServlet("/js/cah.config.js")
 public class JavascriptConfigServlet extends HttpServlet {
+
+  private static final Logger LOG = LogManager.getLogger(JavascriptConfigServlet.class);
 
   private static final long serialVersionUID = 4287566906479434127L;
 
@@ -59,8 +63,8 @@ public class JavascriptConfigServlet extends HttpServlet {
     if (!contextPath.endsWith("/")) {
       contextPath += "/";
     }
-    builder.append(String.format("cah.AJAX_URI = '%sAjaxServlet';\n", contextPath));
-    builder.append(String.format("cah.LONGPOLL_URI = '%sLongPollServlet';\n", contextPath));
+    builder.append(String.format("cah.AJAX_URI = '%sAjaxServlet';%n",contextPath));
+    builder.append(String.format("cah.LONGPOLL_URI = '%sLongPollServlet';%n",contextPath));
 
     configString = builder.toString();
 
@@ -83,33 +87,44 @@ public class JavascriptConfigServlet extends HttpServlet {
         .getInstance(Key.get(Boolean.class, InsecureIdAllowed.class));
     final Boolean broadcastingUsers = injector
         .getInstance(Key.get(Boolean.class, BroadcastConnectsAndDisconnects.class));
-    builder.append(String.format("cah.COOKIE_DOMAIN = '%s';\n", cookieDomain));
-    builder.append(String.format("cah.GLOBAL_CHAT_ENABLED = %b;\n", globalChatEnabled));
-    builder.append(String.format("cah.GAME_CHAT_ENABLED = %b;\n", gameChatEnabled));
-    builder.append(String.format("cah.INSECURE_ID_ALLOWED = %b;\n", insecureIdAllowed));
-    builder.append(String.format("cah.BROADCASTING_USERS = %b;\n", broadcastingUsers));
-    builder.append(String.format("cah.BROADCASTING_USERS = %b;\n", broadcastingUsers));
+    builder.append(String.format("cah.COOKIE_DOMAIN = '%s';%n",cookieDomain));
+    builder.append(String.format("cah.GLOBAL_CHAT_ENABLED = %b;%n",globalChatEnabled));
+    builder.append(String.format("cah.GAME_CHAT_ENABLED = %b;%n",gameChatEnabled));
+    builder.append(String.format("cah.INSECURE_ID_ALLOWED = %b;%n",insecureIdAllowed));
+    builder.append(String.format("cah.BROADCASTING_USERS = %b;%n", broadcastingUsers));
 
-    builder.append(String.format("cah.CUSTOM_DECKS_ENABLED = %b;\n", injector.getInstance(Key.get(Boolean.class, CustomDecksEnabled.class))));
+    builder.append(String.format("cah.CUSTOM_DECKS_ENABLED = %b;%n",injector.getInstance(Key.get(Boolean.class, CustomDecksEnabled.class))));
 
-    builder.append(String.format("cah.MIN_PLAYER_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, MinPlayerLimit.class))));
-    builder.append(String.format("cah.DEFAULT_PLAYER_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, DefaultPlayerLimit.class))));
-    builder.append(String.format("cah.MAX_PLAYER_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, MaxPlayerLimit.class))));
+    builder.append(String.format("cah.MIN_PLAYER_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, MinPlayerLimit.class))));
+    builder.append(String.format("cah.DEFAULT_PLAYER_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, DefaultPlayerLimit.class))));
+    builder.append(String.format("cah.MAX_PLAYER_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, MaxPlayerLimit.class))));
 
-    builder.append(String.format("cah.MIN_SPECTATOR_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, MinSpectatorLimit.class))));
-    builder.append(String.format("cah.DEFAULT_SPECTATOR_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, DefaultSpectatorLimit.class))));
-    builder.append(String.format("cah.MAX_SPECTATOR_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, MaxSpectatorLimit.class))));
+    builder.append(String.format("cah.MIN_SPECTATOR_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, MinSpectatorLimit.class))));
+    builder.append(String.format("cah.DEFAULT_SPECTATOR_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, DefaultSpectatorLimit.class))));
+    builder.append(String.format("cah.MAX_SPECTATOR_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, MaxSpectatorLimit.class))));
 
-    builder.append(String.format("cah.MIN_SCORE_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, MinScoreLimit.class))));
-    builder.append(String.format("cah.DEFAULT_SCORE_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, DefaultScoreLimit.class))));
-    builder.append(String.format("cah.MAX_SCORE_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, MaxScoreLimit.class))));
+    builder.append(String.format("cah.MIN_SCORE_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, MinScoreLimit.class))));
+    builder.append(String.format("cah.DEFAULT_SCORE_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, DefaultScoreLimit.class))));
+    builder.append(String.format("cah.MAX_SCORE_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, MaxScoreLimit.class))));
 
-    builder.append(String.format("cah.MIN_BLANK_CARD_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, MinBlankCardLimit.class))));
-    builder.append(String.format("cah.DEFAULT_BLANK_CARD_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, DefaultBlankCardLimit.class))));
-    builder.append(String.format("cah.MAX_BLANK_CARD_LIMIT = %d;\n", injector.getInstance(Key.get(Integer.class, MaxBlankCardLimit.class))));
+    builder.append(String.format("cah.MIN_BLANK_CARD_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, MinBlankCardLimit.class))));
+    builder.append(String.format("cah.DEFAULT_BLANK_CARD_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, DefaultBlankCardLimit.class))));
+    builder.append(String.format("cah.MAX_BLANK_CARD_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, MaxBlankCardLimit.class))));
 
     resp.setContentType("text/javascript");
-    final PrintWriter out = resp.getWriter();
+    final PrintWriter out;
+    try {
+      out = resp.getWriter();
+    } catch (final IOException e) {
+      LOG.error("Unable to get response writer for JS config", e);
+      try {
+        resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+            "Unable to get response writer.");
+      } catch (final IOException e2) {
+        LOG.error("Unable to send error response", e2);
+      }
+      return;
+    }
     out.println(builder.toString());
     out.flush();
     out.close();

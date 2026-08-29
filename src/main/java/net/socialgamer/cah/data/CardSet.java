@@ -1,6 +1,6 @@
 package net.socialgamer.cah.data;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,7 +38,7 @@ public abstract class CardSet {
   }
 
   protected Map<CardSetData, Object> getCommonClientMetadata() {
-    final Map<CardSetData, Object> cardSetData = new HashMap<CardSetData, Object>();
+    final Map<CardSetData, Object> cardSetData = new EnumMap<CardSetData, Object>(CardSetData.class);
     cardSetData.put(CardSetData.ID, getId());
     cardSetData.put(CardSetData.CARD_SET_NAME, getName());
     cardSetData.put(CardSetData.CARD_SET_DESCRIPTION, getDescription());

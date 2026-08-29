@@ -83,7 +83,7 @@ public class GameTest {
   };
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     cuMock = createMock(ConnectedUsers.class);
     gmMock = createMock(GameManager.class);
     metricsMock = createMock(Metrics.class);
@@ -102,8 +102,10 @@ public class GameTest {
     expectLastCall().once();
     replay(gmMock);
 
-    final User user1 = new User("test1", null, "test.lan", false, "1", "1", "en-US", "JUnit");
-    final User user2 = new User("test2", null, "test.lan", false, "2", "2", "en-US", "JUnit");
+    final User user1 = new User(
+        new NewUserInfo("test1", null, "test.lan", false, "1", "en-US", "JUnit"), "1");
+    final User user2 = new User(
+        new NewUserInfo("test2", null, "test.lan", false, "2", "en-US", "JUnit"), "2");
     game.addPlayer(user1);
     game.addPlayer(user2);
 

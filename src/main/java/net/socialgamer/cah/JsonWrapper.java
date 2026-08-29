@@ -81,8 +81,8 @@ public class JsonWrapper {
    */
   public int getInteger(final Object key, final int defaultValue) {
     final Object value = getValue(key);
-    if (value instanceof Number) {
-      return ((Number) value).intValue();
+    if (value instanceof Number number) {
+      return number.intValue();
     }
     return (value == null) ? defaultValue : Integer.parseInt(value.toString());
   }
@@ -98,8 +98,8 @@ public class JsonWrapper {
    */
   public boolean getBoolean(final Object key, final boolean defaultValue) {
     final Object value = getValue(key);
-    if (value instanceof Boolean) {
-      return (Boolean) value;
+    if (value instanceof Boolean bool) {
+      return bool;
     }
     return (value == null) ? defaultValue : Boolean.parseBoolean(value.toString());
   }

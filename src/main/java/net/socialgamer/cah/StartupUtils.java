@@ -69,12 +69,12 @@ public class StartupUtils extends GuiceServletContextListener {
   /**
    * Delay before the disconnected client timer is started when the server starts, in milliseconds.
    */
-  private static final long PING_START_DELAY = 60 * 1000;
+  private static final long PING_START_DELAY = 60L * 1000;
 
   /**
    * Delay between invocations of the disconnected client timer, in milliseconds.
    */
-  private static final long PING_CHECK_DELAY = 5 * 1000;
+  private static final long PING_CHECK_DELAY = 5L * 1000;
 
   /**
    * Delay before the "update game list" broadcast timer is started, in milliseconds.
@@ -95,6 +95,14 @@ public class StartupUtils extends GuiceServletContextListener {
    * Context attribute key name for whether verbose request and response logging is enabled.
    */
   public static final String VERBOSE_DEBUG = "verbose_debug";
+
+  /**
+   * Lock for {@link #reloadProperties(ServletContext, Properties)}. Synchronizing on the
+   * {@code Properties} instance itself would be meaningless if a caller ever passed in a
+   * different instance, and risks contending with unrelated code that happens to hold the same
+   * reference.
+   */
+  private static final Object PROPS_RELOAD_LOCK = new Object();
 
   @Override
   public void contextDestroyed(final ServletContextEvent contextEvent) {
@@ -133,7 +141,6 @@ public class StartupUtils extends GuiceServletContextListener {
 
     // this is called in the process of setting up the injector right now... ideally we wouldn't
     // need to do that there and can just do it here again.
-    // reloadProperties(context);
     CustomCardsService.hackSslVerifier();
 
     // log that the server (re-)started to metrics logging (to flush all old games and users)
@@ -155,13 +162,12 @@ public class StartupUtils extends GuiceServletContextListener {
 
     final File propsFile = new File(context.getRealPath("/WEB-INF/pyx.properties"));
     try {
-      synchronized (props) {
+      synchronized (PROPS_RELOAD_LOCK) {
         props.clear();
         props.load(new FileReader(propsFile));
       }
     } catch (final Exception e) {
-      // we should probably do something?
-      e.printStackTrace();
+      LOG.error("Unable to reload {}", propsFile, e);
     }
   }
 
@@ -178,6 +184,6 @@ public class StartupUtils extends GuiceServletContextListener {
 
   @Override
   protected Injector getInjector() {
-    throw new RuntimeException("Not supported.");
+    throw new UnsupportedOperationException("Not supported.");
   }
 }
