@@ -283,14 +283,19 @@
       <version>3.20.0</version>
     </dependency>
     <dependency>
-      <groupId>org.hibernate</groupId>
+      <groupId>org.hibernate.orm</groupId>
       <artifactId>hibernate-core</artifactId>
-      <version>5.6.15.Final</version>
+      <version>6.0.0.Final</version>
     </dependency>
     <dependency>
-      <groupId>org.hibernate</groupId>
+      <groupId>org.hibernate.orm</groupId>
       <artifactId>hibernate-c3p0</artifactId>
-      <version>5.6.15.Final</version>
+      <version>6.0.0.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate.orm</groupId>
+      <artifactId>hibernate-community-dialects</artifactId>
+      <version>6.0.0.Final</version>
     </dependency>
     <dependency>
       <groupId>com.dampcake</groupId>
@@ -310,7 +315,7 @@
     <dependency>
       <groupId>org.xerial</groupId>
       <artifactId>sqlite-jdbc</artifactId>
-      <version>3.41.2.2</version>
+      <version>3.53.4.0</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -327,18 +332,28 @@
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
-      <version>2.25.4</version>
+      <version>2.26.1</version>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.7.12</version>
+      <version>42.7.13</version>
     </dependency>
     <dependency>
       <groupId>org.easymock</groupId>
       <artifactId>easymock</artifactId>
       <version>5.7.0</version>
       <scope>test</scope>
+    </dependency>
+    <!-- EasyMock 5.7.0 requires byte-buddy 1.18.12; without this, Maven resolves the older
+         1.12.8 pulled in transitively by hibernate-core, which is ABI-incompatible. Scope must
+         match hibernate-core's own (runtime), otherwise this declaration wins version mediation
+         but drops the jar from the runtime classpath/WAR entirely. -->
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>1.18.12</version>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
