@@ -710,14 +710,18 @@ public class Game {
     }
     if (started) {
       currentUniqueId = uniqueIdProvider.get();
-      logger.info(String.format("Starting game %d with card sets %s, Cardcast %s, %d blanks, %d "
-              + "max players, %d max spectators, %d score limit, players %s, unique %s.",
-          id, options.cardSetIds, customDecksIds, options.blanksInDeck, options.playerLimit,
-          options.spectatorLimit, options.scoreGoal, players, currentUniqueId));
       // do this stuff outside the players lock; they will lock players again later for much less
       // time, and not at the same time as trying to lock users, which has caused deadlocks
       final List<CardSet> cardSets;
       synchronized (options.cardSetIds) {
+        // cardSetIds and players are plain (non-thread-safe-iteration) collections; format them
+        // while holding a lock / from a copy instead of handing them to %s directly, which
+        // iterates them unsynchronized and can throw ConcurrentModificationException.
+        logger.info(String.format("Starting game %d with card sets %s, Cardcast %s, %d blanks, %d "
+                + "max players, %d max spectators, %d score limit, players %s, unique %s.",
+            id, options.cardSetIds, customDecksIds, options.blanksInDeck, options.playerLimit,
+            options.spectatorLimit, options.scoreGoal, Arrays.toString(players.toArray()),
+            currentUniqueId));
         cardSets = loadCardSets(session);
         blackDeck = loadBlackDeck(cardSets);
         whiteDeck = loadWhiteDeck(cardSets);
@@ -950,11 +954,15 @@ public class Game {
       killRoundTimer();
 
       if (state == GameState.JUDGING) {
-        final Map<ReturnableData, Object> data = new HashMap<ReturnableData, Object>();
-        data.put(LongPollResponse.EVENT, LongPollEvent.HURRY_UP.toString());
-        data.put(LongPollResponse.GAME_ID, this.id);
-        final QueuedMessage q = new QueuedMessage(MessageType.GAME_EVENT, data);
-        getJudge().getUser().enqueueMessage(q);
+        // the judge can end up gone here if they disconnected at the exact wrong time
+        final Player judge = getJudge();
+        if (judge != null) {
+          final Map<ReturnableData, Object> data = new HashMap<ReturnableData, Object>();
+          data.put(LongPollResponse.EVENT, LongPollEvent.HURRY_UP.toString());
+          data.put(LongPollResponse.GAME_ID, this.id);
+          final QueuedMessage q = new QueuedMessage(MessageType.GAME_EVENT, data);
+          judge.getUser().enqueueMessage(q);
+        }
       }
 
       final SafeTimerTask task = new SafeTimerTask() {
@@ -1246,6 +1254,13 @@ public class Game {
    */
   private void startNextRound() {
     killRoundTimer();
+
+    if (whiteDeck == null || blackDeck == null) {
+      // The game was reset to the lobby (e.g. too few players left) while this call was
+      // scheduled or in flight; Future.cancel(false) can't stop a task that's already running.
+      logger.info(String.format("Not starting next round for game %d: game has been reset.", id));
+      return;
+    }
 
     synchronized (playedCards) {
       for (final List<WhiteCard> cards : playedCards.cards()) {
