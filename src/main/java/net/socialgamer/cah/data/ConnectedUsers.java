@@ -167,13 +167,20 @@ public class ConnectedUsers {
    *          Reason the user is being removed.
    */
   public void removeUser(final User user, final DisconnectReason reason) {
+    boolean removed = false;
     synchronized (users) {
       if (users.containsKey(user.getNickname().toLowerCase())) {
         logger.info(String.format("Removing user %s because %s", user.toString(), reason));
-        user.noLongerValid();
         users.remove(user.getNickname().toLowerCase());
         notifyRemoveUser(user, reason);
+        removed = true;
       }
+    }
+    if (removed) {
+      // Do this after releasing the users lock: it can call back into Game/GameManager, which
+      // lock games before users in some paths (e.g. creating a game broadcasts to its players).
+      // Calling this while still holding users here risks a lock-order deadlock.
+      user.noLongerValid();
     }
   }
 

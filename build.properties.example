@@ -110,6 +110,13 @@ hibernate.cache.use_second_level_cache=false
 hibernate.cache.use_query_cache=false
 hibernate.cache.provider_class=org.hibernate.cache.NoCacheProvider
 
+# c3p0 connection pool sizing. Lower these if your database (or host, e.g. Heroku Postgres free
+# tier) caps total concurrent connections lower than min_size + whatever else uses the same DB --
+# a pool sized above the DB's connection limit can make requests hang indefinitely waiting for a
+# connection that will never free up.
+hibernate.c3p0.min_size=5
+hibernate.c3p0.max_size=20
+
 # If the server should send replay IDs to clients after certain events, and if the client should
 # display a permalink to them. You must be using the KafkaMetrics implementation, and have
 # pyx-metrics-processor running somewhere to put the data into a database, and have

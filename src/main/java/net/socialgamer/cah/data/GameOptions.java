@@ -141,7 +141,13 @@ public class GameOptions {
     public Map<GameOptionData, Object> serialize(final boolean includePassword) {
         final Map<GameOptionData, Object> info = new HashMap<GameOptionData, Object>();
 
-        info.put(GameOptionData.CARD_SETS, cardSetIds);
+        // Copy, rather than handing out the live set: this map often outlives the call (it gets
+        // JSON-serialized later), and cardSetIds can be mutated concurrently by update().
+        final Set<Integer> cardSetIdsCopy;
+        synchronized (cardSetIds) {
+            cardSetIdsCopy = new HashSet<Integer>(cardSetIds);
+        }
+        info.put(GameOptionData.CARD_SETS, cardSetIdsCopy);
         info.put(GameOptionData.BLANKS_LIMIT, blanksInDeck);
         info.put(GameOptionData.PLAYER_LIMIT, playerLimit);
         info.put(GameOptionData.SPECTATOR_LIMIT, spectatorLimit);
@@ -159,9 +165,11 @@ public class GameOptions {
      */
     public Set<Integer> getPyxCardSetIds() {
         final Set<Integer> pyxCardSetIds = new HashSet<Integer>();
-        for (final Integer cardSetId : cardSetIds) {
-            if (cardSetId > 0) {
-                pyxCardSetIds.add(cardSetId);
+        synchronized (cardSetIds) {
+            for (final Integer cardSetId : cardSetIds) {
+                if (cardSetId > 0) {
+                    pyxCardSetIds.add(cardSetId);
+                }
             }
         }
         return pyxCardSetIds;
