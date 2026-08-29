@@ -28,8 +28,10 @@ import java.io.FileReader;
 import java.net.URI;
 import java.util.Date;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -115,7 +117,10 @@ public class StartupUtils extends GuiceServletContextListener {
     try {
       injector.getInstance(DiscordNotifier.class).notify("PYX server is stopping.")
           .get(4, TimeUnit.SECONDS);
-    } catch (final Exception e) {
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOG.warn("Discord stop notification did not complete", e);
+    } catch (final ExecutionException | TimeoutException e) {
       LOG.warn("Discord stop notification did not complete", e);
     }
 
