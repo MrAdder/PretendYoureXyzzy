@@ -25,7 +25,6 @@ package net.socialgamer.cah.servlets;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
@@ -118,21 +117,18 @@ public class Schema extends HttpServlet {
    * Create a temporary file readable and writable only by this process' own user.
    * java.io.tmpdir is typically shared/world-writable; restricting access at creation (rather
    * than via a chmod-style call afterward) avoids a window where the file briefly has default,
-   * more permissive access.
+   * more permissive access. This requires a POSIX filesystem, which is what every supported
+   * deployment target (Docker/Linux) uses.
    */
   private static Path createRestrictedTempFile() throws IOException {
-    if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
-      final FileAttribute<?> perms =
-          PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"));
+    final FileAttribute<?> perms =
+        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"));
+    try {
       return Files.createTempFile("pyx-schema", ".sql", perms);
+    } catch (final UnsupportedOperationException e) {
+      throw new IOException(
+          "This filesystem does not support POSIX file permissions; refusing to create a "
+              + "temporary file without being able to restrict its permissions.", e);
     }
-    // No POSIX permissions on this filesystem (e.g. Windows): best effort only.
-    final Path tempFile = Files.createTempFile("pyx-schema", ".sql");
-    final java.io.File asFile = tempFile.toFile();
-    if (!(asFile.setReadable(false, false) && asFile.setReadable(true, true)
-        && asFile.setWritable(false, false) && asFile.setWritable(true, true))) {
-      LOG.warn("Unable to restrict permissions on temporary schema file {}", tempFile);
-    }
-    return tempFile;
   }
 }
