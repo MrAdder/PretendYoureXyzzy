@@ -60,6 +60,9 @@ to, for instance, display the number of connected players.
 </p>
 <p>Recent Changes:</p>
 <ul>
+  <li>29 August 2026: Fork brought up to date &mdash; Java 25, Postgres/Docker deployment, dark mode,
+  and a round of bug fixes and code cleanup. See the
+  <a href="changelog.html">full changelog</a> for details.</li>
   <li><a href="changelog.html">Older entries.</a></li>
 </ul>
 <p>Known issues:</p>
