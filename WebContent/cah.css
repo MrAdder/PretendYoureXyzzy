@@ -52,6 +52,8 @@
   --pyx-binder-border: silver;
   --pyx-selected-bg: #3c7fb1;
   --pyx-selected-fg: #fff;
+  --pyx-disabled-bg: #ddd;
+  --pyx-disabled-fg: #888;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -77,6 +79,8 @@
     --pyx-binder-border: #777;
     --pyx-selected-bg: #5b9bd5;
     --pyx-selected-fg: #fff;
+    --pyx-disabled-bg: #3a3a3a;
+    --pyx-disabled-fg: #6b6b6b;
   }
 }
 
@@ -102,6 +106,8 @@ html.dark-theme {
   --pyx-binder-border: #777;
   --pyx-selected-bg: #5b9bd5;
   --pyx-selected-fg: #fff;
+  --pyx-disabled-bg: #3a3a3a;
+  --pyx-disabled-fg: #6b6b6b;
 }
 
 /* Forces light even when the OS/browser prefers dark; :root's tokens already apply by default. */
@@ -154,6 +160,22 @@ html.dark-theme .ui-state-active {
   color: var(--pyx-selected-fg);
 }
 
+/*
+ * Chromium (and likely other browsers) render :disabled form controls under color-scheme: dark
+ * by taking the enabled colors and dropping them to ~30% opacity, rather than using an
+ * explicitly-authored disabled style. On our own dark background that produces near-black text
+ * on a near-black button -- readable in neither theme, but especially bad here since --pyx-bg is
+ * itself very dark. Authoring an explicit disabled style (opaque, not alpha-based) avoids that.
+ */
+html.dark-theme input:disabled,
+html.dark-theme select:disabled,
+html.dark-theme textarea:disabled {
+  background: var(--pyx-disabled-bg);
+  color: var(--pyx-disabled-fg);
+  border-color: var(--pyx-panel-border);
+  opacity: 1;
+}
+
 @media (prefers-color-scheme: dark) {
   html:not(.light-theme) .ui-widget-content,
   html:not(.light-theme) input[type="text"],
@@ -188,6 +210,15 @@ html.dark-theme .ui-state-active {
     border-color: var(--pyx-selected-bg);
     background: var(--pyx-selected-bg);
     color: var(--pyx-selected-fg);
+  }
+
+  html:not(.light-theme) input:disabled,
+  html:not(.light-theme) select:disabled,
+  html:not(.light-theme) textarea:disabled {
+    background: var(--pyx-disabled-bg);
+    color: var(--pyx-disabled-fg);
+    border-color: var(--pyx-panel-border);
+    opacity: 1;
   }
 }
 
