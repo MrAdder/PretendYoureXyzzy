@@ -35,6 +35,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -54,6 +56,8 @@ import org.hibernate.tool.schema.TargetType;
 public class Schema extends HttpServlet {
   private static final long serialVersionUID = 1L;
 
+  private static final Logger LOG = LogManager.getLogger(Schema.class);
+
   /**
    * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
    */
@@ -68,18 +72,41 @@ public class Schema extends HttpServlet {
         .build();
     try {
       final Metadata metadata = new MetadataSources(registry).buildMetadata();
-      final File tempFile = File.createTempFile("pyx-schema", ".sql");
+      final File tempFile;
+      try {
+        tempFile = File.createTempFile("pyx-schema", ".sql");
+      } catch (final IOException e) {
+        LOG.error("Unable to create temporary file for schema export", e);
+        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+            "Unable to create temporary file for schema export.");
+        return;
+      }
+      // java.io.tmpdir is typically shared/world-writable; restrict the file itself to this
+      // process' own user so nothing else on the same host can read the (transient) schema
+      // dump or race us to replace its contents before we read it back below.
+      if (!(tempFile.setReadable(false, false) && tempFile.setReadable(true, true)
+          && tempFile.setWritable(false, false) && tempFile.setWritable(true, true))) {
+        LOG.warn(String.format(
+            "Unable to restrict permissions on temporary schema file %s", tempFile));
+      }
       try {
         new SchemaExport()
             .setOutputFile(tempFile.getAbsolutePath())
             .setDelimiter(";")
             .create(EnumSet.of(TargetType.SCRIPT), metadata);
         final PrintWriter out = response.getWriter();
-        for (final String line : Files.readAllLines(tempFile.toPath())) {
-          out.println(line);
+        try {
+          for (final String line : Files.readAllLines(tempFile.toPath())) {
+            out.println(line);
+          }
+        } catch (final IOException e) {
+          LOG.error(String.format("Unable to read back generated schema file %s", tempFile), e);
+          out.println("-- Error reading generated schema; see server log.");
         }
       } finally {
-        tempFile.delete();
+        if (!tempFile.delete()) {
+          LOG.warn(String.format("Unable to delete temporary schema file %s", tempFile));
+        }
       }
     } finally {
       StandardServiceRegistryBuilder.destroy(registry);
