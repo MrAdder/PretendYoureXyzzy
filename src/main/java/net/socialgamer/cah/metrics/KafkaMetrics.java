@@ -262,22 +262,22 @@ public class KafkaMetrics implements Metrics {
     final Map<String, Object> geo = new HashMap<>();
     if (null != geoIp) {
       // it appears these will never be null and will return null/blank data, but let's be sure
-      if (null != geoIp.getCity()) {
-        geo.put("city", geoIp.getCity().getName());
+      if (null != geoIp.city()) {
+        geo.put("city", geoIp.city().name());
       }
-      if (null != geoIp.getCountry()) {
-        geo.put("country", geoIp.getCountry().getIsoCode());
+      if (null != geoIp.country()) {
+        geo.put("country", geoIp.country().isoCode());
       }
       final List<String> subdivCodes = new ArrayList<>(2);
-      geoIp.getSubdivisions().forEach(subdiv -> subdivCodes.add(subdiv.getIsoCode()));
+      geoIp.subdivisions().forEach(subdiv -> subdivCodes.add(subdiv.isoCode()));
       if (!subdivCodes.isEmpty()) {
         geo.put("subdivisions", subdivCodes);
       }
-      if (null != geoIp.getRepresentedCountry()) {
-        geo.put("representedCountry", geoIp.getRepresentedCountry().getIsoCode());
+      if (null != geoIp.representedCountry()) {
+        geo.put("representedCountry", geoIp.representedCountry().isoCode());
       }
-      if (null != geoIp.getPostal()) {
-        geo.put("postal", geoIp.getPostal().getCode());
+      if (null != geoIp.postal()) {
+        geo.put("postal", geoIp.postal().code());
       }
     }
     data.put("geo", geo);
