@@ -26,8 +26,6 @@ package net.socialgamer.cah.data;
 import java.util.LinkedList;
 import java.util.List;
 
-import net.socialgamer.cah.data.WhiteCard;
-
 
 /**
  * Data required for a player in a {@code Game}.

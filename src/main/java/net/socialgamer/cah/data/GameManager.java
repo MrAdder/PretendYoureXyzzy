@@ -132,8 +132,7 @@ public class GameManager implements Provider<Integer> {
       }
       try {
         game.addPlayer(user);
-        logger.info(String.format("Created new game %d by user %s.",
-            game.getId(), user.toString()));
+        logger.info("Created new game {} by user {}.", game.getId(), user);
       } catch (final IllegalStateException ise) {
         destroyGame(game.getId());
         throw ise;
@@ -173,7 +172,7 @@ public class GameManager implements Provider<Integer> {
         game.removeSpectator(user);
       }
 
-      logger.info(String.format("Destroyed game %d.", game.getId()));
+      logger.info("Destroyed game {}.", game.getId());
       broadcastGameListRefresh();
     }
   }
