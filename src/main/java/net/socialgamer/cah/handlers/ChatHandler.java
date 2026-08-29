@@ -126,8 +126,7 @@ public class ChatHandler extends Handler {
         return ErrorCode.MESSAGE_TOO_LONG;
       case TOO_MANY_SPECIALS:
         return ErrorCode.TOO_MANY_SPECIAL_CHARACTERS;
-      case DROP_MESSAGE:
-      case OK:
+      case DROP_MESSAGE, OK:
       default:
         return null;
     }

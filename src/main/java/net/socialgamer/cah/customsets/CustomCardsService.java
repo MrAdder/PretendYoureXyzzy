@@ -342,8 +342,10 @@ public class CustomCardsService {
     }
 
     if (resolvesToDisallowedAddress(url.getHost())) {
-      LOG.warn("Refusing to load deck, host resolves to a non-public address: {}",
-          LogSanitizer.sanitize(url.getHost()));
+      if (LOG.isWarnEnabled()) {
+        LOG.warn("Refusing to load deck, host resolves to a non-public address: {}",
+            LogSanitizer.sanitize(url.getHost()));
+      }
       return null;
     }
 
@@ -359,12 +361,16 @@ public class CustomCardsService {
 
     final int code = conn.getResponseCode();
     if (HttpURLConnection.HTTP_OK != code) {
-      LOG.error("Got HTTP response code {} for {}", code, LogSanitizer.sanitize(urlStr));
+      if (LOG.isErrorEnabled()) {
+        LOG.error("Got HTTP response code {} for {}", code, LogSanitizer.sanitize(urlStr));
+      }
       return null;
     }
     final String contentType = conn.getContentType();
     if (contentType == null || !contentType.startsWith("application/json")) {
-      LOG.error("Got content-type {} for {}", contentType, LogSanitizer.sanitize(urlStr));
+      if (LOG.isErrorEnabled()) {
+        LOG.error("Got content-type {} for {}", contentType, LogSanitizer.sanitize(urlStr));
+      }
       return null;
     }
 

@@ -117,8 +117,12 @@ public class JavascriptConfigServlet extends HttpServlet {
       out = resp.getWriter();
     } catch (final IOException e) {
       LOG.error("Unable to get response writer for JS config", e);
-      resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-          "Unable to get response writer.");
+      try {
+        resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+            "Unable to get response writer.");
+      } catch (final IOException e2) {
+        LOG.error("Unable to send error response", e2);
+      }
       return;
     }
     out.println(builder.toString());

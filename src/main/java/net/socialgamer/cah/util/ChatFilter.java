@@ -179,8 +179,10 @@ public class ChatFilter {
       // assume that the banned strings are already lowercase
       // check both ways in case it decides lowercase of some unicode is not what we want though
       if (message.contains(banned) || messageLower.contains(banned)) {
-        LOG.info("Dropping message '{}' from user {} ({}); contains banned string {}.",
-            LogSanitizer.sanitize(message), user.getNickname(), user.getHostname(), banned);
+        if (LOG.isInfoEnabled()) {
+          LOG.info("Dropping message '{}' from user {} ({}); contains banned string {}.",
+              LogSanitizer.sanitize(message), user.getNickname(), user.getHostname(), banned);
+        }
         return Result.DROP_MESSAGE;
       }
     }

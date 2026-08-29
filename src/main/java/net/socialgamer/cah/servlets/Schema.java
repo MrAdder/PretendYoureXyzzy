@@ -88,8 +88,12 @@ public class Schema extends HttpServlet {
         out = response.getWriter();
       } catch (final IOException e) {
         LOG.error("Unable to get response writer for schema export", e);
-        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-            "Unable to get response writer.");
+        try {
+          response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+              "Unable to get response writer.");
+        } catch (final IOException e2) {
+          LOG.error("Unable to send error response", e2);
+        }
         return;
       }
       final ScriptTargetOutput target = new ScriptTargetOutputToWriter(out);

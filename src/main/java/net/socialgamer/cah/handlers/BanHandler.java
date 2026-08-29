@@ -90,11 +90,16 @@ public class BanHandler extends Handler {
       kickUser.enqueueMessage(qm);
 
       connectedUsers.removeUser(kickUser, DisconnectReason.BANNED);
-      logger.info("Banning {} ({}) by request of {}", LogSanitizer.sanitize(kickUser.getNickname()),
-          banIp, user.getNickname());
+      if (logger.isInfoEnabled()) {
+        logger.info("Banning {} ({}) by request of {}",
+            LogSanitizer.sanitize(kickUser.getNickname()), banIp, user.getNickname());
+      }
     } else {
       banIp = request.getParameter(AjaxRequest.NICKNAME);
-      logger.info("Banning {} by request of {}", LogSanitizer.sanitize(banIp), user.getNickname());
+      if (logger.isInfoEnabled()) {
+        logger.info("Banning {} by request of {}", LogSanitizer.sanitize(banIp),
+            user.getNickname());
+      }
     }
     banList.add(banIp);
 

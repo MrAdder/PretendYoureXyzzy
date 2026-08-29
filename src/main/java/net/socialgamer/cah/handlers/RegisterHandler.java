@@ -114,9 +114,11 @@ public class RegisterHandler extends Handler {
   public Map<ReturnableData, Object> handle(final RequestWrapper request,
       final HttpSession session) {
     if (banList.contains(request.getRemoteAddr())) {
-      LOG.info("Rejecting user {} from {} because they are banned.",
-          LogSanitizer.sanitize(request.getParameter(AjaxRequest.NICKNAME)),
-          request.getRemoteAddr());
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Rejecting user {} from {} because they are banned.",
+            LogSanitizer.sanitize(request.getParameter(AjaxRequest.NICKNAME)),
+            request.getRemoteAddr());
+      }
       return error(ErrorCode.BANNED);
     }
 

@@ -75,7 +75,10 @@ public abstract class CahServlet extends HttpServlet {
       request.setCharacterEncoding("UTF-8");
     } catch (final UnsupportedEncodingException e) {
       // UTF-8 is guaranteed to be supported by every JVM; this can't actually happen.
-      throw new ServletException(e);
+      log("Unable to set request character encoding: " + e);
+      response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+          "Unable to set request character encoding.");
+      return;
     }
     response.setContentType("application/json");
     response.setCharacterEncoding("UTF-8");
@@ -287,6 +290,11 @@ public abstract class CahServlet extends HttpServlet {
    * @param message
    *          The message to log.
    */
+  // log(String) here is HttpServlet's own logger, which only ever writes to the container's log
+  // file/console -- never to an HTTP response -- so there's no actual reflected-XSS path despite
+  // how the rule reads. LogSanitizer strips CR/LF to prevent log forging (the real risk for a
+  // log-only sink), which the security engine doesn't recognize as a sanitizer for this rule.
+  @SuppressWarnings("javasecurity:S5131")
   protected void log(@Nullable final User user, final String message) {
     final String userStr;
     if (user != null) {

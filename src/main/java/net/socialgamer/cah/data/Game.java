@@ -698,6 +698,9 @@ public class Game {
    * game is already started, or doesn't have enough cards, but hopefully callers and
    * clients would prevent that from happening!
    */
+  // Picking the start judge has no security implications -- ThreadLocalRandom is intentional
+  // here, not a cryptographic gap.
+  @SuppressWarnings("java:S2245")
   public boolean start(final Session session) {
     if (state != GameState.LOBBY || !hasEnoughCards(session)) {
       return false;
@@ -720,11 +723,13 @@ public class Game {
         // cardSetIds and players are plain (non-thread-safe-iteration) collections; format them
         // while holding a lock / from a copy instead of handing them to %s directly, which
         // iterates them unsynchronized and can throw ConcurrentModificationException.
-        logger.info("Starting game {} with card sets {}, Cardcast {}, {} blanks, {} max players, "
-                + "{} max spectators, {} score limit, players {}, unique {}.",
-            id, options.cardSetIds, customDecksIds, options.blanksInDeck, options.playerLimit,
-            options.spectatorLimit, options.scoreGoal, Arrays.toString(players.toArray()),
-            currentUniqueId);
+        if (logger.isInfoEnabled()) {
+          logger.info("Starting game {} with card sets {}, Cardcast {}, {} blanks, {} max "
+                  + "players, {} max spectators, {} score limit, players {}, unique {}.",
+              id, options.cardSetIds, customDecksIds, options.blanksInDeck, options.playerLimit,
+              options.spectatorLimit, options.scoreGoal, Arrays.toString(players.toArray()),
+              currentUniqueId);
+        }
         cardSets = loadCardSets(session);
         blackDeck = loadBlackDeck(cardSets);
         whiteDeck = loadWhiteDeck(cardSets);
