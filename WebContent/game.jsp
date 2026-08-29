@@ -64,6 +64,7 @@ boolean showAddCustomDeckJson = injector.getInstance(Key.get(new TypeLiteral<Boo
 <script type="text/javascript" src="js/jquery-ui.min.js"></script>
 <script type="text/javascript" src="js/cah.js"></script>
 <script type="text/javascript" src="js/cah.config.js"></script>
+<script type="text/javascript" src="js/cah.discord.js"></script>
 <%-- cah must be first, ajax must be before app. app probably has to be last. --%>
 <%-- TODO make this be dynamic with looking at the filesystem and using jquery --%>
 <%-- except that is nontrivial thanks to dependency ordering -_- --%>

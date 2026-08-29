@@ -43,6 +43,42 @@ add both containers to a shared external Docker network, then point NPM at `http
 Enable "Websockets Support" is not required (this app uses long-polling, not WebSockets), but
 there's no harm leaving it on.
 
+## Discord integration
+
+Both pieces are optional and independent — set either, both, or neither of `discord.webhook.url` /
+`discord.client_id` in `build.properties`. Like everything else there, changes require
+`docker compose build` (not just a restart) to take effect.
+
+### Server start/stop notifications
+
+1. In Discord, go to the target channel's Settings -> Integrations -> Webhooks -> New Webhook, and
+   copy its URL.
+2. Set `discord.webhook.url` in `build.properties` to that URL.
+
+The server posts a short message to that channel every time the app starts and stops (container
+restarts included).
+
+### Embedded Activity (play inside a Discord voice channel)
+
+This lets people launch the game as a [Discord
+Activity](https://discord.com/developers/docs/activities/overview), embedded directly in a voice
+channel, instead of opening it in a separate browser tab.
+
+1. Create an application at the [Discord Developer
+   Portal](https://discord.com/developers/applications) (or use an existing one) and copy its
+   Application (Client) ID.
+2. Set `discord.client_id` in `build.properties` to that ID.
+3. In the Developer Portal, under Activities -> URL Mappings, add a single root mapping: prefix `/`,
+   target your deployment's public domain (the same one NPM is configured for above).
+4. Under OAuth2, set a redirect URI (a placeholder like `https://127.0.0.1` is fine — this app
+   doesn't request Discord user identity, so no OAuth token exchange actually happens).
+5. Enable the Activity under Activities -> Settings, then launch it from a voice channel to test.
+
+The one thing this can't be verified without a live Discord client: whether Discord's Activity proxy
+tolerates this app's ~20-25 second long-polling connections (`LongPollServlet`). If players report
+the game seeming to hang or not update while running as an Activity (but working fine in a normal
+browser tab), that's the likely cause — worth testing after first setting this up.
+
 ## Security note on X-Forwarded-For
 
 The app trusts `X-Forwarded-For` verbatim for admin IP checks, bans, and GeoIP -- it doesn't

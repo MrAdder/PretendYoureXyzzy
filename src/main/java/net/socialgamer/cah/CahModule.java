@@ -273,6 +273,30 @@ public class CahModule extends AbstractModule {
   }
 
   /**
+   * @return The Discord webhook URL to post server start/stop notifications to, or blank if not
+   *         configured (in which case {@link net.socialgamer.cah.util.DiscordNotifier} is a no-op).
+   */
+  @Provides
+  @DiscordWebhookUrl
+  String provideDiscordWebhookUrl() {
+    synchronized (properties) {
+      return properties.getProperty("discord.webhook.url", "");
+    }
+  }
+
+  /**
+   * @return This app's Discord Application (Client) ID, for the embedded Activity, or blank if not
+   *         configured (in which case the client won't attempt to initialize the Discord SDK).
+   */
+  @Provides
+  @DiscordClientId
+  String provideDiscordClientId() {
+    synchronized (properties) {
+      return properties.getProperty("discord.client_id", "");
+    }
+  }
+
+  /**
    * @return A Hibernate session. Objects which receive a Hibernate session should close the
    * session when they are done!
    */
@@ -445,6 +469,16 @@ public class CahModule extends AbstractModule {
   @BindingAnnotation
   @Retention(RetentionPolicy.RUNTIME)
   public @interface IncludeInactiveCardsets {
+  }
+
+  @BindingAnnotation
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface DiscordWebhookUrl {
+  }
+
+  @BindingAnnotation
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface DiscordClientId {
   }
 
   @BindingAnnotation

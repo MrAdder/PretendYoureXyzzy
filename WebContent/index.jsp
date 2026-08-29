@@ -35,6 +35,7 @@ to, for instance, display the number of connected players.
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <title>Pretend You're Xyzzy</title>
 <script type="text/javascript" src="js/cah.theme.js"></script>
+<script type="text/javascript" src="js/cah.discord.js"></script>
 <jsp:include page="analytics.jsp" />
 <link rel="stylesheet" type="text/css" href="cah.css" media="screen" />
 </head>

@@ -28,8 +28,10 @@ import java.io.FileReader;
 import java.net.URI;
 import java.util.Date;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -40,6 +42,7 @@ import net.socialgamer.cah.customsets.CustomCardsService;
 import net.socialgamer.cah.metrics.Metrics;
 import net.socialgamer.cah.task.BroadcastGameListUpdateTask;
 import net.socialgamer.cah.task.UserPingTask;
+import net.socialgamer.cah.util.DiscordNotifier;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,6 +112,18 @@ public class StartupUtils extends GuiceServletContextListener {
     final ServletContext context = contextEvent.getServletContext();
 
     final Injector injector = (Injector) context.getAttribute(INJECTOR);
+    // Block briefly: this is one of the last things done before the process exits, and a plain
+    // fire-and-forget async send would otherwise usually get cut off before it's actually sent.
+    try {
+      injector.getInstance(DiscordNotifier.class).notify("PYX server is stopping.")
+          .get(4, TimeUnit.SECONDS);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOG.warn("Discord stop notification did not complete", e);
+    } catch (final ExecutionException | TimeoutException e) {
+      LOG.warn("Discord stop notification did not complete", e);
+    }
+
     final ScheduledThreadPoolExecutor timer = injector
         .getInstance(ScheduledThreadPoolExecutor.class);
     timer.shutdownNow();
@@ -146,6 +161,8 @@ public class StartupUtils extends GuiceServletContextListener {
     // log that the server (re-)started to metrics logging (to flush all old games and users)
     injector.getInstance(Metrics.class).serverStart(
         injector.getInstance(Key.get(String.class, UniqueId.class)));
+
+    injector.getInstance(DiscordNotifier.class).notify("PYX server has started.");
   }
 
   public static void reloadProperties(final ServletContext context) {
