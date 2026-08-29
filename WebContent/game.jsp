@@ -108,12 +108,6 @@ boolean showAddCustomDeckJson = injector.getInstance(Key.get(new TypeLiteral<Boo
     It is not tied in any way to your username, except possibly if a server error occurs. Gameplay
     results are logged permanently, but without information identifying you.
   </p>
-  <p tabindex="0">Most recent update: 3 September 2018:</p>
-  <ul>
-    <li>All chat and fill-in-the-blank cards have been disabled. If you're still out of the loop,
-    <a href="https://gist.githubusercontent.com/ajanata/07ededdb584f7bb77a8c7191d3a4bbcc/raw/e76faacc19c2bb598a1a8fd94b9ebcb29c5502e0">
-    here's why.</a></li>
-  </ul>
   <h2>The servers are incredibly busy right now. There are several servers to try, there will be
   room elsewhere! <a href='https://pretendyoure.xyz/zy'>CLICK HERE</a> to see the server list. As
   long as you're on the same server as your friends, you can play together. Please stop crowding
@@ -127,7 +121,7 @@ boolean showAddCustomDeckJson = injector.getInstance(Key.get(new TypeLiteral<Boo
     Optional identification code:</dfn></label>
     <input type="password" id="idcode" value="" maxlength="100" disabled="disabled"
         aria-label="Optionally enter an identification code." />
-    <a href="https://github.com/ajanata/PretendYoureXyzzy/wiki/Identification-Codes">(Help)</a>
+    <a href="https://github.com/MrAdder/PretendYoureXyzzy/wiki/Identification-Codes">(Help)</a>
     <input type="button" id="nicknameconfirm" value="Set" />
     <span id="nickbox_error" class="error"></span>
   </div>
@@ -140,7 +134,7 @@ boolean showAddCustomDeckJson = injector.getInstance(Key.get(new TypeLiteral<Boo
     <a href="http://creativecommons.org/licenses/by-nc-sa/3.0/">Creative Commons - Attribution -
     Noncommercial - Share Alike license</a>. This web version is in no way endorsed or sponsored by
     cardsagainsthumanity.com. You may download the source code to this version from
-    <a href="https://github.com/ajanata/PretendYoureXyzzy">GitHub</a>. For full license
+    <a href="https://github.com/MrAdder/PretendYoureXyzzy">GitHub</a>. For full license
     information, including information about included libraries, see the
     <a href="license.html">full license information</a>.
   </p>
