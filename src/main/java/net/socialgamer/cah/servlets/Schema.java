@@ -23,10 +23,13 @@
 
 package net.socialgamer.cah.servlets;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.EnumSet;
 
 import javax.servlet.ServletException;
@@ -72,44 +75,64 @@ public class Schema extends HttpServlet {
         .build();
     try {
       final Metadata metadata = new MetadataSources(registry).buildMetadata();
-      final File tempFile;
+      final Path tempFile;
       try {
-        tempFile = File.createTempFile("pyx-schema", ".sql");
+        tempFile = createRestrictedTempFile();
       } catch (final IOException e) {
         LOG.error("Unable to create temporary file for schema export", e);
-        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-            "Unable to create temporary file for schema export.");
+        try {
+          response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+              "Unable to create temporary file for schema export.");
+        } catch (final IOException e2) {
+          LOG.error("Unable to send error response", e2);
+        }
         return;
-      }
-      // java.io.tmpdir is typically shared/world-writable; restrict the file itself to this
-      // process' own user so nothing else on the same host can read the (transient) schema
-      // dump or race us to replace its contents before we read it back below.
-      if (!(tempFile.setReadable(false, false) && tempFile.setReadable(true, true)
-          && tempFile.setWritable(false, false) && tempFile.setWritable(true, true))) {
-        LOG.warn(String.format(
-            "Unable to restrict permissions on temporary schema file %s", tempFile));
       }
       try {
         new SchemaExport()
-            .setOutputFile(tempFile.getAbsolutePath())
+            .setOutputFile(tempFile.toAbsolutePath().toString())
             .setDelimiter(";")
             .create(EnumSet.of(TargetType.SCRIPT), metadata);
         final PrintWriter out = response.getWriter();
         try {
-          for (final String line : Files.readAllLines(tempFile.toPath())) {
+          for (final String line : Files.readAllLines(tempFile)) {
             out.println(line);
           }
         } catch (final IOException e) {
-          LOG.error(String.format("Unable to read back generated schema file %s", tempFile), e);
+          LOG.error("Unable to read back generated schema file {}", tempFile, e);
           out.println("-- Error reading generated schema; see server log.");
         }
       } finally {
-        if (!tempFile.delete()) {
-          LOG.warn(String.format("Unable to delete temporary schema file %s", tempFile));
+        try {
+          Files.deleteIfExists(tempFile);
+        } catch (final IOException e) {
+          LOG.warn("Unable to delete temporary schema file {}", tempFile, e);
         }
       }
     } finally {
       StandardServiceRegistryBuilder.destroy(registry);
     }
+  }
+
+  /**
+   * Create a temporary file readable and writable only by this process' own user.
+   * java.io.tmpdir is typically shared/world-writable; restricting access at creation (rather
+   * than via a chmod-style call afterward) avoids a window where the file briefly has default,
+   * more permissive access.
+   */
+  private static Path createRestrictedTempFile() throws IOException {
+    if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+      final FileAttribute<?> perms =
+          PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"));
+      return Files.createTempFile("pyx-schema", ".sql", perms);
+    }
+    // No POSIX permissions on this filesystem (e.g. Windows): best effort only.
+    final Path tempFile = Files.createTempFile("pyx-schema", ".sql");
+    final java.io.File asFile = tempFile.toFile();
+    if (!(asFile.setReadable(false, false) && asFile.setReadable(true, true)
+        && asFile.setWritable(false, false) && asFile.setWritable(true, true))) {
+      LOG.warn("Unable to restrict permissions on temporary schema file {}", tempFile);
+    }
+    return tempFile;
   }
 }
