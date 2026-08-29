@@ -13,10 +13,13 @@ package net.socialgamer.cah.hibernate;
 
 import java.sql.Types;
 
+import org.hibernate.MappingException;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.function.SQLFunctionTemplate;
 import org.hibernate.dialect.function.StandardSQLFunction;
 import org.hibernate.dialect.function.VarArgsSQLFunction;
+import org.hibernate.dialect.identity.IdentityColumnSupport;
+import org.hibernate.dialect.identity.IdentityColumnSupportImpl;
 import org.hibernate.type.StandardBasicTypes;
 
 
@@ -53,40 +56,36 @@ public class SqliteDialect extends Dialect {
     registerFunction("substring", new StandardSQLFunction("substr", StandardBasicTypes.STRING));
   }
 
-  @Override
-  public boolean supportsIdentityColumns() {
-    return true;
-  }
-
   /*
-   * public boolean supportsInsertSelectIdentity() {
-   * return true; // As specify in NHibernate dialect
-   * }
+   * Hibernate 5.1+ moved identity-column handling off Dialect and onto a separate
+   * IdentityColumnSupport strategy object (getIdentityColumnString()/getIdentitySelectString()
+   * also picked up extra table/column/type parameters they don't need here).
    */
-
   @Override
-  public boolean hasDataTypeInIdentityColumn() {
-    return false; // As specify in NHibernate dialect
-  }
+  public IdentityColumnSupport getIdentityColumnSupport() {
+    return new IdentityColumnSupportImpl() {
+      @Override
+      public boolean supportsIdentityColumns() {
+        return true;
+      }
 
-  /*
-   * public String appendIdentitySelectToInsert(String insertString) {
-   * return new StringBuffer(insertString.length()+30). // As specify in NHibernate dialect
-   * append(insertString).
-   * append("; ").append(getIdentitySelectString()).
-   * toString();
-   * }
-   */
+      @Override
+      public boolean hasDataTypeInIdentityColumn() {
+        return false; // As specify in NHibernate dialect
+      }
 
-  @Override
-  public String getIdentityColumnString() {
-    // return "integer primary key autoincrement";
-    return "integer";
-  }
+      @Override
+      public String getIdentityColumnString(final int type) throws MappingException {
+        // return "integer primary key autoincrement";
+        return "integer";
+      }
 
-  @Override
-  public String getIdentitySelectString() {
-    return "select last_insert_rowid()";
+      @Override
+      public String getIdentitySelectString(final String table, final String column,
+          final int type) throws MappingException {
+        return "select last_insert_rowid()";
+      }
+    };
   }
 
   @Override
@@ -98,21 +97,6 @@ public class SqliteDialect extends Dialect {
   public String getLimitString(final String query, final boolean hasOffset) {
     return new StringBuffer(query.length() + 20).append(query)
         .append(hasOffset ? " limit ? offset ?" : " limit ?").toString();
-  }
-
-  @Override
-  public boolean supportsTemporaryTables() {
-    return true;
-  }
-
-  @Override
-  public String getCreateTemporaryTableString() {
-    return "create temporary table if not exists";
-  }
-
-  @Override
-  public boolean dropTemporaryTableAfterUse() {
-    return false;
   }
 
   @Override

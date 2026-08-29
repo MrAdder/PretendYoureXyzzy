@@ -23,8 +23,11 @@
 
 package net.socialgamer.cah.servlets;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.util.EnumSet;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -32,8 +35,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.hibernate.cfg.Configuration;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.tool.hbm2ddl.SchemaExport;
+import org.hibernate.tool.schema.TargetType;
 
 
 /**
@@ -51,12 +60,29 @@ public class Schema extends HttpServlet {
   @Override
   protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
       throws ServletException, IOException {
-    final Configuration c = new Configuration();
-    c.configure();
-    final String[] ls = c.generateSchemaCreationScript(new PostgreSQLDialect());
-    final PrintWriter out = response.getWriter();
-    for (final String l : ls) {
-      out.println(l + ";");
+    // Force PostgreSQL regardless of what's actually configured (likely SqliteDialect for local
+    // dev): this endpoint exists to show what the schema would look like for a production deploy.
+    final StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
+        .configure()
+        .applySetting(AvailableSettings.DIALECT, PostgreSQLDialect.class.getName())
+        .build();
+    try {
+      final Metadata metadata = new MetadataSources(registry).buildMetadata();
+      final File tempFile = File.createTempFile("pyx-schema", ".sql");
+      try {
+        new SchemaExport()
+            .setOutputFile(tempFile.getAbsolutePath())
+            .setDelimiter(";")
+            .create(EnumSet.of(TargetType.SCRIPT), metadata);
+        final PrintWriter out = response.getWriter();
+        for (final String line : Files.readAllLines(tempFile.toPath())) {
+          out.println(line);
+        }
+      } finally {
+        tempFile.delete();
+      }
+    } finally {
+      StandardServiceRegistryBuilder.destroy(registry);
     }
   }
 }

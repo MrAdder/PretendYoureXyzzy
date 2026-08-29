@@ -9,7 +9,6 @@
         <property name="hibernate.connection.url">${hibernate.url}</property>
         <property name="hibernate.connection.username">${hibernate.username}</property>
         <property name="hibernate.connection.password">${hibernate.password}</property>
-        <property name="transaction.factory_class">org.hibernate.transaction.JDBCTransactionFactory</property>
 
         <property name="hibernate.cache.use_second_level_cache">${hibernate.cache.use_second_level_cache}</property>
         <property name="hibernate.cache.provider_class">${hibernate.cache.provider_class}</property>
