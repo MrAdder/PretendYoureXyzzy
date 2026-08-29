@@ -318,25 +318,29 @@ public class CustomCardsService {
     }
   }
 
+  /**
+   * @return Whether {@code host} matches an entry in the configured allowlist ("*" for all,
+   *         "*.example.com" for a domain suffix, or an exact host).
+   */
+  private boolean isHostAllowed(final String host) {
+    for (final String pattern : allowedUrlsProvider.get()) {
+      if ("*".equals(pattern)) {
+        return true;
+      } else if (pattern.charAt(0) == '*') {
+        if (host.endsWith(pattern.substring(1))) {
+          return true;
+        }
+      } else if (host.equals(pattern)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private String getUrlContent(final String urlStr) throws IOException {
     final URL url = new URL(urlStr);
 
-    List<String> allowedUrls = allowedUrlsProvider.get();
-    boolean allowed = false;
-    for (String pattern : allowedUrls) {
-      if ("*".equals(pattern)) {
-        allowed = true;
-      } else if (pattern.charAt(0) == '*') {
-        allowed = url.getHost().endsWith(pattern.substring(1));
-      } else {
-        allowed = url.getHost().equals(pattern);
-      }
-
-      if (allowed)
-        break;
-    }
-
-    if (!allowed) {
+    if (!isHostAllowed(url.getHost())) {
       LOG.info("Cannot load deck, domain is not allowed: {}", url.getHost());
       return null;
     }

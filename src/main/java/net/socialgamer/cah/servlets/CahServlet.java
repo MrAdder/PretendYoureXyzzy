@@ -76,8 +76,12 @@ public abstract class CahServlet extends HttpServlet {
     } catch (final UnsupportedEncodingException e) {
       // UTF-8 is guaranteed to be supported by every JVM; this can't actually happen.
       log("Unable to set request character encoding: " + e);
-      response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-          "Unable to set request character encoding.");
+      try {
+        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+            "Unable to set request character encoding.");
+      } catch (final IOException e2) {
+        log("Unable to send error response: " + e2);
+      }
       return;
     }
     response.setContentType("application/json");
