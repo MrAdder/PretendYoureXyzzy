@@ -83,7 +83,7 @@ public class GameTest {
   };
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     cuMock = createMock(ConnectedUsers.class);
     gmMock = createMock(GameManager.class);
     metricsMock = createMock(Metrics.class);

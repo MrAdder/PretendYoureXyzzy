@@ -115,7 +115,7 @@ public class GameChatHandler extends GameWithPlayerHandler {
         case TOO_MANY_SPECIALS:
           return error(ErrorCode.TOO_MANY_SPECIAL_CHARACTERS);
         default:
-          LOG.error(String.format("Unknown chat filter result %s", filterResult));
+          LOG.error("Unknown chat filter result {}", filterResult);
       }
 
       final HashMap<ReturnableData, Object> broadcastData = new HashMap<ReturnableData, Object>();

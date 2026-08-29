@@ -43,7 +43,7 @@ import net.socialgamer.cah.data.User;
  */
 public abstract class GameWithPlayerHandler extends GameHandler {
 
-  public GameWithPlayerHandler(final GameManager gameManager) {
+  protected GameWithPlayerHandler(final GameManager gameManager) {
     super(gameManager);
   }
 

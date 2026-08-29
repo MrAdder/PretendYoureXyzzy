@@ -46,7 +46,7 @@ import com.google.inject.Inject;
  */
 public class LogoutHandler extends Handler {
 
-  public final static String OP = AjaxOperation.LOG_OUT.toString();
+  public static final String OP = AjaxOperation.LOG_OUT.toString();
 
   private final ConnectedUsers users;
 

@@ -57,7 +57,7 @@ public class GeoIP {
   private final Provider<Properties> propertiesProvider;
 
   @Inject
-  public GeoIP(final Provider<Properties> propertiesProvider) throws IOException {
+  public GeoIP(final Provider<Properties> propertiesProvider) {
     this.propertiesProvider = propertiesProvider;
   }
 

@@ -112,8 +112,7 @@ public class FirstLoadHandler extends Handler {
     ret.put(AjaxResponse.GLOBAL_CHAT_ENABLED, globalChatEnabled);
 
     if (banList.contains(request.getRemoteAddr())) {
-      LOG.info(String.format("Rejecting user from %s because they are banned.",
-          request.getRemoteAddr()));
+      LOG.info("Rejecting user from {} because they are banned.", request.getRemoteAddr());
       return error(ErrorCode.BANNED);
     }
 
