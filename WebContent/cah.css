@@ -21,14 +21,184 @@
  * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * Theme tokens. The black/white playing cards themselves (.blackcard, .whitecard, and their
+ * logo/watermark bits) are deliberately NOT themed here -- they're mimicking physical CAH cards,
+ * not app chrome, so they keep the same colors in both light and dark mode.
+ *
+ * Precedence, light to dark: :root (light defaults) < prefers-color-scheme: dark (followed unless
+ * overridden) < html.light-theme / html.dark-theme (explicit choice via the toggle button,
+ * wins either direction). See js/cah.theme.js for how the html.*-theme class gets set.
+ */
+:root {
+  color-scheme: light;
+  --pyx-bg: #eee;
+  --pyx-fg: #000;
+  --pyx-panel-bg: #fff;
+  --pyx-panel-border: #ccc;
+  --pyx-border-strong: #000;
+  --pyx-border-soft: #999;
+  --pyx-border-muted: #bbb;
+  --pyx-scorecard-alt-bg: #f8f8f8;
+  --pyx-gradient-a: #fff;
+  --pyx-gradient-b: #ddd;
+  --pyx-gradient-border: #aaa;
+  --pyx-joinable: green;
+  --pyx-unjoinable: #c0c0c0;
+  --pyx-error: red;
+  --pyx-info: blue;
+  --pyx-hand-filter-overlay: rgba(192, 192, 192, .5);
+  --pyx-hand-filter-text-bg: #eee;
+  --pyx-binder-border: silver;
+  --pyx-selected-bg: #3c7fb1;
+  --pyx-selected-fg: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light-theme) {
+    color-scheme: dark;
+    --pyx-bg: #1a1a1a;
+    --pyx-fg: #e8e8e8;
+    --pyx-panel-bg: #2a2a2a;
+    --pyx-panel-border: #444;
+    --pyx-border-strong: #666;
+    --pyx-border-soft: #666;
+    --pyx-border-muted: #444;
+    --pyx-scorecard-alt-bg: #333;
+    --pyx-gradient-a: #3a3a3a;
+    --pyx-gradient-b: #2a2a2a;
+    --pyx-gradient-border: #555;
+    --pyx-joinable: #4caf50;
+    --pyx-unjoinable: #777;
+    --pyx-error: #ff6b6b;
+    --pyx-info: #6ea8fe;
+    --pyx-hand-filter-overlay: rgba(0, 0, 0, .6);
+    --pyx-hand-filter-text-bg: #2a2a2a;
+    --pyx-binder-border: #777;
+    --pyx-selected-bg: #5b9bd5;
+    --pyx-selected-fg: #fff;
+  }
+}
+
+html.dark-theme {
+  color-scheme: dark;
+  --pyx-bg: #1a1a1a;
+  --pyx-fg: #e8e8e8;
+  --pyx-panel-bg: #2a2a2a;
+  --pyx-panel-border: #444;
+  --pyx-border-strong: #666;
+  --pyx-border-soft: #666;
+  --pyx-border-muted: #444;
+  --pyx-scorecard-alt-bg: #333;
+  --pyx-gradient-a: #3a3a3a;
+  --pyx-gradient-b: #2a2a2a;
+  --pyx-gradient-border: #555;
+  --pyx-joinable: #4caf50;
+  --pyx-unjoinable: #777;
+  --pyx-error: #ff6b6b;
+  --pyx-info: #6ea8fe;
+  --pyx-hand-filter-overlay: rgba(0, 0, 0, .6);
+  --pyx-hand-filter-text-bg: #2a2a2a;
+  --pyx-binder-border: #777;
+  --pyx-selected-bg: #5b9bd5;
+  --pyx-selected-fg: #fff;
+}
+
+/* Forces light even when the OS/browser prefers dark; :root's tokens already apply by default. */
+html.light-theme {
+  color-scheme: light;
+}
+
+/*
+ * jQuery UI's bundled theme (jquery-ui.min.css) hardcodes its own light colors and background
+ * images, used here for the bottom tab panel (User Preferences / Game List Filters / Global Chat)
+ * and the preferences dialog, and for plain <input>/<select>/<textarea> elements it doesn't touch
+ * at all. Overriding the shared widget classes handles both, and anything else built from them
+ * later, without touching the third-party stylesheet or changing light mode's own look. These need
+ * the extra html.dark-theme/html:not() specificity to win: cah.css loads before jquery-ui.min.css
+ * in the page, so plain same-specificity class selectors here would lose to its later,
+ * equal-specificity rules.
+ */
+html.dark-theme .ui-widget-content,
+html.dark-theme input[type="text"],
+html.dark-theme input[type="password"],
+html.dark-theme textarea,
+html.dark-theme select {
+  border-color: var(--pyx-panel-border);
+  background: var(--pyx-panel-bg);
+  color: var(--pyx-fg);
+}
+
+html.dark-theme .ui-widget-header {
+  border-color: var(--pyx-panel-border);
+  background: var(--pyx-bg);
+  color: var(--pyx-fg);
+}
+
+html.dark-theme .ui-state-default {
+  border-color: var(--pyx-panel-border);
+  background: var(--pyx-panel-bg);
+  color: var(--pyx-fg);
+}
+
+html.dark-theme .ui-state-hover,
+html.dark-theme .ui-state-focus {
+  border-color: var(--pyx-selected-bg);
+  background: var(--pyx-bg);
+  color: var(--pyx-fg);
+}
+
+html.dark-theme .ui-state-active {
+  border-color: var(--pyx-selected-bg);
+  background: var(--pyx-selected-bg);
+  color: var(--pyx-selected-fg);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light-theme) .ui-widget-content,
+  html:not(.light-theme) input[type="text"],
+  html:not(.light-theme) input[type="password"],
+  html:not(.light-theme) textarea,
+  html:not(.light-theme) select {
+    border-color: var(--pyx-panel-border);
+    background: var(--pyx-panel-bg);
+    color: var(--pyx-fg);
+  }
+
+  html:not(.light-theme) .ui-widget-header {
+    border-color: var(--pyx-panel-border);
+    background: var(--pyx-bg);
+    color: var(--pyx-fg);
+  }
+
+  html:not(.light-theme) .ui-state-default {
+    border-color: var(--pyx-panel-border);
+    background: var(--pyx-panel-bg);
+    color: var(--pyx-fg);
+  }
+
+  html:not(.light-theme) .ui-state-hover,
+  html:not(.light-theme) .ui-state-focus {
+    border-color: var(--pyx-selected-bg);
+    background: var(--pyx-bg);
+    color: var(--pyx-fg);
+  }
+
+  html:not(.light-theme) .ui-state-active {
+    border-color: var(--pyx-selected-bg);
+    background: var(--pyx-selected-bg);
+    color: var(--pyx-selected-fg);
+  }
+}
+
 #gamebody {
   overflow: hidden;
 }
 
 body {
   min-height: 640px;
-  background: #eee;
-  color: #000;
+  background: var(--pyx-bg);
+  color: var(--pyx-fg);
   font-size: 12px;
   margin: 0;
 }
@@ -87,7 +257,7 @@ h2,h3,h4 {
 }
 
 #nickbox {
-  border: 1px solid black;
+  border: 1px solid var(--pyx-border-strong);
   display: inline;
   padding: 5px;
 }
@@ -116,12 +286,12 @@ h2,h3,h4 {
 }
 
 .gamelist_lobby {
-  background: #fff;
+  background: var(--pyx-panel-bg);
   border-radius: .25em;
   width: 575px;
   height: 175px;
   float: left;
-  border: 1px solid #ccc;
+  border: 1px solid var(--pyx-panel-border);
   margin: 4px;
 }
 
@@ -141,8 +311,8 @@ h2,h3,h4 {
 .gamelist_lobby_join {
   width: 100%;
   height: 75%;
-  border: 1px solid #aaa;
-  background: linear-gradient(#fff, #ddd) #ddd;
+  border: 1px solid var(--pyx-gradient-border);
+  background: linear-gradient(var(--pyx-gradient-a), var(--pyx-gradient-b)) var(--pyx-gradient-b);
   border-radius: .25em;
   text-transform: uppercase;
   font-weight: 700;
@@ -152,8 +322,8 @@ h2,h3,h4 {
 .gamelist_lobby_spectate {
   width: 100%;
   height: 25%;
-  border: 1px solid #aaa;
-  background: linear-gradient(#fff, #ddd) #ddd;
+  border: 1px solid var(--pyx-gradient-border);
+  background: linear-gradient(var(--pyx-gradient-a), var(--pyx-gradient-b)) var(--pyx-gradient-b);
   border-radius: .25em;
   text-transform: uppercase;
   font-weight: 700;
@@ -165,11 +335,11 @@ h2,h3,h4 {
 }
 
 .gamelist_lobby_status_joinable {
-  color: green;
+  color: var(--pyx-joinable);
 }
 
 .gamelist_lobby_status_unjoinable {
-  color: #c0c0c0;
+  color: var(--pyx-unjoinable);
 }
 
 #bottom {
@@ -186,7 +356,7 @@ h2,h3,h4 {
   position: absolute;
   bottom: 0px;
   min-height: 100px;
-  border: 1px solid #999;
+  border: 1px solid var(--pyx-border-soft);
 }
 
 #tabs {
@@ -229,7 +399,7 @@ h2,h3,h4 {
   width: 100%;
   height: 198px;
   border-style: none solid solid none;
-  border-color: black;
+  border-color: var(--pyx-border-strong);
   border-width: 1px;
   position: absolute;
   bottom: 18px;
@@ -249,7 +419,7 @@ h2,h3,h4 {
 }
 
 .chat {
-  border: 1px solid black;
+  border: 1px solid var(--pyx-border-strong);
   left: -1px;
   bottom: 0px;
   height: 17px;
@@ -272,18 +442,18 @@ h2,h3,h4 {
 }
 
 span.error {
-  color: red;
+  color: var(--pyx-error);
 }
 
 span.debug, span.admin {
-  color: blue;
+  color: var(--pyx-info);
 }
 
 .card {
   position: relative;
   width: 200px;
   height: 200px;
-  border: 1px solid #999;
+  border: 1px solid var(--pyx-border-soft);
   padding: 15px;
   font-size: 15pt;
   float: left;
@@ -307,8 +477,13 @@ span.debug, span.admin {
   color: #231f20;
 }
 
-.whitecard, .gamelist_lobby{
-  background-image: linear-gradient(#fff,#fff 75%,#f8f8f8);
+.whitecard {
+  background-image: linear-gradient(#fff, #fff 75%, #f8f8f8);
+}
+
+.gamelist_lobby {
+  background-image: linear-gradient(var(--pyx-panel-bg), var(--pyx-panel-bg) 75%,
+      var(--pyx-scorecard-alt-bg));
 }
 
 .cah {
@@ -345,7 +520,7 @@ span.debug, span.admin {
 .game_hand_filter {
   height: 100%;
   position: relative;
-  background: rgba(192, 192, 192, .5);
+  background: var(--pyx-hand-filter-overlay);
   z-index: 100;
   text-align: center;
 }
@@ -355,7 +530,7 @@ span.debug, span.admin {
   top: 50%;
   font-size: 300%;
   margin-top: -30px;
-  background:#eee;
+  background: var(--pyx-hand-filter-text-bg);
   padding:.25em;
 }
 
@@ -417,7 +592,7 @@ span.debug, span.admin {
 }
 
 .game_options {
-  background: #eee;
+  background: var(--pyx-bg);
   z-index: 500;
 }
 
@@ -444,7 +619,7 @@ span.debug, span.admin {
 }
 
 .game_white_cards_binder {
-  border: 3px solid silver;
+  border: 3px solid var(--pyx-binder-border);
   display: inline-block;
   margin-right: 4px;
   margin-bottom: 4px;
@@ -472,15 +647,15 @@ span.debug, span.admin {
 }
 
 .scorecard {
-  background:#fff;
+  background: var(--pyx-panel-bg);
   height: 36px;
   padding:.25em .5em;
-  border-bottom: 1px solid #bbb;
+  border-bottom: 1px solid var(--pyx-border-muted);
   font-size: 11pt;
 }
 
 .scorecard:nth-child(even) {
-  background:#f8f8f8;
+  background: var(--pyx-scorecard-alt-bg);
 }
 
 .scorecard_status {
@@ -493,8 +668,8 @@ span.debug, span.admin {
 }
 
 .selected {
-  color: #fff;
-  background: #3c7fb1 !important;
+  color: var(--pyx-selected-fg);
+  background: var(--pyx-selected-bg) !important;
 }
 
 .logo {
@@ -603,7 +778,7 @@ span.debug, span.admin {
 
 .previous_round {
   z-index: 50;
-  border: 3px solid black;
+  border: 3px solid var(--pyx-border-strong);
   width: 60%;
   height: 60%;
   position: absolute;
@@ -650,7 +825,7 @@ span.debug, span.admin {
 }
 
 dfn {
-  border-bottom: 1px dotted black;
+  border-bottom: 1px dotted var(--pyx-border-strong);
 }
 
 #tweetbox {

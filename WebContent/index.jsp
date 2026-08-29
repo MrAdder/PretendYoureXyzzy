@@ -34,10 +34,13 @@ to, for instance, display the number of connected players.
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <title>Pretend You're Xyzzy</title>
+<script type="text/javascript" src="js/cah.theme.js"></script>
 <jsp:include page="analytics.jsp" />
 <link rel="stylesheet" type="text/css" href="cah.css" media="screen" />
 </head>
 <body>
+<input type="button" id="theme_toggle" value="Toggle Dark Mode" onclick="pyxToggleTheme();"
+    style="float: right; margin: 15px" />
 <div id="tweetbox">
   <h3>Recent tweets (mainly server status updates)</h3>
   <a class="twitter-timeline" data-height="500" data-dnt="true" data-theme="light"
@@ -45,7 +48,7 @@ to, for instance, display the number of connected players.
   <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </div>
 <h1>
-  Pretend You're <dfn style="border-bottom: 1px dotted black"
+  Pretend You're <dfn
   title="Xyzzy is an Artificial Unintelligence bot. You'll be making more sense than him in this game.">
   Xyzzy</dfn>
 </h1>
