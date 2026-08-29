@@ -1,0 +1,9 @@
+.git
+target
+build
+.github
+.idea
+*.iml
+.classpath
+.project
+.settings
