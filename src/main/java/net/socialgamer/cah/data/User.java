@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -88,50 +89,26 @@ public class User {
   /**
    * Create a new user.
    *
-   * @param nickname
-   *          The user's nickname.
-   * @param idCode
-   *          The user's ID code, after hashing with salt and their name, or the empty string if
-   *          none provided.
-   * @param hostname
-   *          The user's Internet hostname (which will likely just be their IP address).
-   * @param isAdmin
-   *          Whether this user is an admin.
-   * @param persistentId
-   *          This user's persistent (cross-session) ID.
+   * @param info
+   *          The client-supplied properties for this user.
    * @param sessionId
    *          The unique ID of this session for this server instance.
-   * @param clientLanguage
-   *          The language of the user's web browser/client.
-   * @param clientAgent
-   *          The name of the user's web browser/client.
    */
   @Inject
-  public User(@Assisted("nickname") final String nickname,
-      @Assisted("idCode") final String idCode,
-      @Assisted("hostname") final String hostname,
-      @Assisted final boolean isAdmin,
-      @Assisted("persistentId") final String persistentId,
-      @UniqueId final String sessionId,
-      @Nullable @Assisted("clientLanguage") final String clientLanguage,
-      @Nullable @Assisted("clientAgent") final String clientAgent) {
-    this.nickname = nickname;
-    this.idCode = idCode;
-    this.hostname = hostname;
-    this.isAdmin = isAdmin;
-    this.persistentId = persistentId;
+  public User(@Assisted final NewUserInfo info, @UniqueId final String sessionId) {
+    this.nickname = info.nickname;
+    this.idCode = info.idCode;
+    this.hostname = info.hostname;
+    this.isAdmin = info.isAdmin;
+    this.persistentId = info.persistentId;
     this.sessionId = sessionId;
-    this.clientLanguage = clientLanguage == null ? "" : clientLanguage;
-    agent = UADetectorServiceFactory.getResourceModuleParser().parse(clientAgent);
+    this.clientLanguage = info.clientLanguage == null ? "" : info.clientLanguage;
+    agent = UADetectorServiceFactory.getResourceModuleParser().parse(info.clientAgent);
     queuedMessages = new LinkedBlockingQueue<QueuedMessage>();
   }
 
   public interface Factory {
-    User create(@Assisted("nickname") String nickname, @Assisted("idCode") String idCode,
-        @Assisted("hostname") String hostname, boolean isAdmin,
-        @Assisted("persistentId") String persistentId,
-        @Nullable @Assisted("clientLanguage") String clientLanguage,
-        @Nullable @Assisted("clientAgent") String clientAgent);
+    User create(NewUserInfo info);
   }
 
   /**
@@ -164,8 +141,15 @@ public class User {
    */
   public void waitForNewMessageNotification(final long timeout) throws InterruptedException {
     if (timeout > 0) {
+      final long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout);
       synchronized (queuedMessageSynchronization) {
-        queuedMessageSynchronization.wait(timeout);
+        while (queuedMessages.isEmpty()) {
+          final long remainingMillis = TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime());
+          if (remainingMillis <= 0) {
+            break;
+          }
+          queuedMessageSynchronization.wait(remainingMillis);
+        }
       }
     }
   }
@@ -180,6 +164,7 @@ public class User {
     try {
       return queuedMessages.take();
     } catch (final InterruptedException ie) {
+      Thread.currentThread().interrupt();
       return null;
     }
   }
@@ -298,8 +283,8 @@ public class User {
   public boolean isValidFromHost(final String currentHostname) {
     final boolean addrValid = hostname.equals(currentHostname);
     if (!addrValid) {
-      LOG.warn(String.format("User %s used to be from %s but is now from %s", nickname, hostname,
-          currentHostname));
+      LOG.warn("User {} used to be from {} but is now from {}", nickname, hostname,
+          currentHostname);
     }
     return isValid() && addrValid;
   }

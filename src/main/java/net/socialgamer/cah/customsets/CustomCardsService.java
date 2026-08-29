@@ -28,9 +28,9 @@ import com.google.common.base.Charsets;
 import com.google.common.io.ByteSource;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import net.socialgamer.cah.CahModule;
 import net.socialgamer.cah.CahModule.CustomDecksAllowedUrls;
 import net.socialgamer.cah.CahModule.CustomDecksEnabled;
+import net.socialgamer.cah.util.LogSanitizer;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
@@ -43,7 +43,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.SoftReference;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -95,20 +97,21 @@ public class CustomCardsService {
   }
 
   private static boolean checkCacheValid(CacheEntry entry, String method, String key) {
+    final String safeKey = LogSanitizer.sanitize(key);
     if (null != entry && entry.expires > System.currentTimeMillis()) {
-      LOG.info(String.format("Using cache (%s): %s=%s", method, key, entry.deck));
+      LOG.info("Using cache ({}): {}={}", method, safeKey, entry.deck);
       return true;
     } else if (null != entry) {
-      LOG.info(String.format("Cache stale (%s): %s", method, key));
+      LOG.info("Cache stale ({}): {}", method, safeKey);
       return false;
     } else {
-      LOG.info(String.format("Cache miss (%s): %s", method, key));
+      LOG.info("Cache miss ({}): {}", method, safeKey);
       return false;
     }
   }
 
   public CustomDeck loadSet(int customDeckId) {
-    if (!enabledProvider.get())
+    if (!Boolean.TRUE.equals(enabledProvider.get()))
       return null;
 
     CacheEntry entry = checkCacheId(customDeckId);
@@ -117,7 +120,7 @@ public class CustomCardsService {
   }
 
   public CustomDeck loadSetFromUrl(String url) {
-    if (!enabledProvider.get())
+    if (!Boolean.TRUE.equals(enabledProvider.get()))
       return null;
 
     CacheEntry entry = checkCacheUrl(url);
@@ -134,25 +137,23 @@ public class CustomCardsService {
       return loadSetFromJson(content, url);
     } catch (IOException e) {
       putCache(null, INVALID_SET_CACHE_LIFETIME, url, null);
-      LOG.error(String.format("Unable to load deck from %s", url), e);
-      e.printStackTrace();
+      LOG.error("Unable to load deck from {}", LogSanitizer.sanitize(url), e);
       return null;
     }
   }
 
   public CustomDeck loadSetFromJson(String jsonStr, String url) {
-    if (!enabledProvider.get())
+    if (!Boolean.TRUE.equals(enabledProvider.get()))
       return null;
 
     JSONObject obj;
     String hash;
     try {
       obj = (JSONObject) JSONValue.parse(jsonStr);
-      hash = DigestUtils.md5Hex(bencode.encode(obj));
+      hash = DigestUtils.sha256Hex(bencode.encode(obj));
     } catch (Exception e) {
       putCache(null, INVALID_SET_CACHE_LIFETIME, url, null);
       LOG.error("Unable to parse deck.", e);
-      e.printStackTrace();
       return null;
     }
 
@@ -161,54 +162,76 @@ public class CustomCardsService {
       return entry.deck;
 
     try {
-      final String name = (String) obj.get("name");
-      final String description = (String) obj.get("description");
-      final String watermark = (String) obj.get("watermark");
-      if (null == name || null == description || name.isEmpty() || watermark == null || !VALID_WATERMARK_PATTERN.matcher(watermark).matches()) {
-        // We require a name. Blank description is acceptable, but cannot be null. Watermark is required and must respect the pattern.
+      final CustomDeck deck = buildDeckFromJson(obj);
+      if (deck == null) {
         return null;
       }
-
-      int deckId = deckIdCounter.decrementAndGet();
-      final CustomDeck deck = new CustomDeck(deckId, StringEscapeUtils.escapeXml11(name), StringEscapeUtils.escapeXml11(watermark), StringEscapeUtils.escapeXml11(description));
-
-      // load up the cards
-      final JSONArray blacks = (JSONArray) obj.get("calls");
-      if (null != blacks) {
-        for (final Object black : blacks) {
-          final JSONArray texts = (JSONArray) ((JSONObject) black).get("text");
-          if (null != texts) {
-            final String text = CustomCardFormatHelper.formatBlackCard(texts);
-            final int pick = texts.size() - 1;
-            final int draw = (pick >= 3 ? pick - 1 : 0);
-            final CustomBlackCard card = new CustomBlackCard(cardIdCounter.incrementAndGet(), text, draw, pick, watermark);
-            deck.getBlackCards().add(card);
-          }
-        }
-      }
-
-      final JSONArray whites = (JSONArray) obj.get("responses");
-      if (null != whites) {
-        for (final Object white : whites) {
-          final JSONArray texts = (JSONArray) ((JSONObject) white).get("text");
-          if (null != texts) {
-            final String text = CustomCardFormatHelper.formatWhiteCard(texts);
-            // don't add blank cards, they don't do anything
-            if (!text.isEmpty()) {
-              final CustomWhiteCard card = new CustomWhiteCard(cardIdCounter.incrementAndGet(), text, watermark);
-              deck.getWhiteCards().add(card);
-            }
-          }
-        }
-      }
-
       putCache(deck, url == null ? VALID_SET_CACHE_LIFETIME_JSON : VALID_SET_CACHE_LIFETIME_URL, url, hash);
       return deck;
     } catch (Exception e) {
       putCache(null, INVALID_SET_CACHE_LIFETIME, url, hash);
       LOG.error("Unable to load deck.", e);
-      e.printStackTrace();
       return null;
+    }
+  }
+
+  /**
+   * @return The deck built from the given custom-set JSON, or {@code null} if it's missing
+   *         required fields.
+   */
+  private CustomDeck buildDeckFromJson(JSONObject obj) {
+    final String name = (String) obj.get("name");
+    final String description = (String) obj.get("description");
+    final String watermark = (String) obj.get("watermark");
+    if (null == name || null == description || name.isEmpty() || watermark == null
+        || !VALID_WATERMARK_PATTERN.matcher(watermark).matches()) {
+      // We require a name. Blank description is acceptable, but cannot be null. Watermark is
+      // required and must respect the pattern.
+      return null;
+    }
+
+    final int deckId = deckIdCounter.decrementAndGet();
+    final CustomDeck deck = new CustomDeck(deckId, StringEscapeUtils.escapeXml11(name),
+        StringEscapeUtils.escapeXml11(watermark), StringEscapeUtils.escapeXml11(description));
+
+    addBlackCards(deck, (JSONArray) obj.get("calls"), watermark);
+    addWhiteCards(deck, (JSONArray) obj.get("responses"), watermark);
+
+    return deck;
+  }
+
+  private void addBlackCards(CustomDeck deck, JSONArray blacks, String watermark) {
+    if (null == blacks) {
+      return;
+    }
+    for (final Object black : blacks) {
+      final JSONArray texts = (JSONArray) ((JSONObject) black).get("text");
+      if (null != texts) {
+        final String text = CustomCardFormatHelper.formatBlackCard(texts);
+        final int pick = texts.size() - 1;
+        final int draw = (pick >= 3 ? pick - 1 : 0);
+        final CustomBlackCard card = new CustomBlackCard(cardIdCounter.incrementAndGet(), text,
+            draw, pick, watermark);
+        deck.getBlackCards().add(card);
+      }
+    }
+  }
+
+  private void addWhiteCards(CustomDeck deck, JSONArray whites, String watermark) {
+    if (null == whites) {
+      return;
+    }
+    for (final Object white : whites) {
+      final JSONArray texts = (JSONArray) ((JSONObject) white).get("text");
+      if (null != texts) {
+        final String text = CustomCardFormatHelper.formatWhiteCard(texts);
+        // don't add blank cards, they don't do anything
+        if (!text.isEmpty()) {
+          final CustomWhiteCard card = new CustomWhiteCard(cardIdCounter.incrementAndGet(), text,
+              watermark);
+          deck.getWhiteCards().add(card);
+        }
+      }
     }
   }
 
@@ -272,6 +295,29 @@ public class CustomCardsService {
     }
   }
 
+  /**
+   * @return Whether {@code host} resolves to any address that isn't routable on the public
+   *         internet (loopback, link-local, site-local/private, or wildcard) -- used to keep the
+   *         custom-deck-by-URL feature from being used to reach internal services, even when the
+   *         configured domain allowlist is permissive (e.g. the default {@code *}).
+   */
+  private boolean resolvesToDisallowedAddress(final String host) {
+    try {
+      for (final InetAddress address : InetAddress.getAllByName(host)) {
+        if (address.isLoopbackAddress() || address.isLinkLocalAddress()
+            || address.isSiteLocalAddress() || address.isAnyLocalAddress()
+            || address.isMulticastAddress()) {
+          return true;
+        }
+      }
+      return false;
+    } catch (UnknownHostException e) {
+      // Can't resolve it, so we certainly can't connect to it either; let the normal connection
+      // failure path handle reporting that.
+      return false;
+    }
+  }
+
   private String getUrlContent(final String urlStr) throws IOException {
     final URL url = new URL(urlStr);
 
@@ -291,7 +337,13 @@ public class CustomCardsService {
     }
 
     if (!allowed) {
-      LOG.info("Cannot load deck, domain is not allowed: " + url.getHost());
+      LOG.info("Cannot load deck, domain is not allowed: {}", url.getHost());
+      return null;
+    }
+
+    if (resolvesToDisallowedAddress(url.getHost())) {
+      LOG.warn("Refusing to load deck, host resolves to a non-public address: {}",
+          LogSanitizer.sanitize(url.getHost()));
       return null;
     }
 
@@ -299,18 +351,20 @@ public class CustomCardsService {
     conn.setDoInput(true);
     conn.setDoOutput(false);
     conn.setRequestMethod("GET");
-    conn.setInstanceFollowRedirects(true);
+    // Deliberately not following redirects: a redirect to an internal address would bypass both
+    // the domain allowlist and the resolved-address check above.
+    conn.setInstanceFollowRedirects(false);
     conn.setReadTimeout(GET_TIMEOUT);
     conn.setConnectTimeout(GET_TIMEOUT);
 
     final int code = conn.getResponseCode();
     if (HttpURLConnection.HTTP_OK != code) {
-      LOG.error(String.format("Got HTTP response code %d for %s", code, urlStr));
+      LOG.error("Got HTTP response code {} for {}", code, LogSanitizer.sanitize(urlStr));
       return null;
     }
     final String contentType = conn.getContentType();
     if (contentType == null || !contentType.startsWith("application/json")) {
-      LOG.error(String.format("Got content-type %s for %s", contentType, urlStr));
+      LOG.error("Got content-type {} for {}", contentType, LogSanitizer.sanitize(urlStr));
       return null;
     }
 

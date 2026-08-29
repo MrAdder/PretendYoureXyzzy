@@ -55,8 +55,10 @@ import net.socialgamer.cah.Constants.ReturnableData;
 import net.socialgamer.cah.Constants.SessionAttribute;
 import net.socialgamer.cah.RequestWrapper;
 import net.socialgamer.cah.data.ConnectedUsers;
+import net.socialgamer.cah.data.NewUserInfo;
 import net.socialgamer.cah.data.User;
 import net.socialgamer.cah.util.IdCodeMangler;
+import net.socialgamer.cah.util.LogSanitizer;
 
 
 /**
@@ -69,7 +71,7 @@ public class RegisterHandler extends Handler {
   private static final Logger LOG = LogManager.getLogger(RegisterHandler.class);
   public static final String OP = AjaxOperation.REGISTER.toString();
 
-  private static final Pattern VALID_NAME = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]{2,29}");
+  private static final Pattern VALID_NAME = Pattern.compile("[a-zA-Z_]\\w{2,29}");
   private static final int ID_CODE_MIN_LENGTH = 8;
   private static final int ID_CODE_MAX_LENGTH = 100;
 
@@ -111,72 +113,95 @@ public class RegisterHandler extends Handler {
   @Override
   public Map<ReturnableData, Object> handle(final RequestWrapper request,
       final HttpSession session) {
-    final Map<ReturnableData, Object> data = new HashMap<ReturnableData, Object>();
-
     if (banList.contains(request.getRemoteAddr())) {
-      LOG.info(String.format("Rejecting user %s from %s because they are banned.",
-          request.getParameter(AjaxRequest.NICKNAME), request.getRemoteAddr()));
+      LOG.info("Rejecting user {} from {} because they are banned.",
+          LogSanitizer.sanitize(request.getParameter(AjaxRequest.NICKNAME)),
+          request.getRemoteAddr());
       return error(ErrorCode.BANNED);
     }
 
+    final ErrorCode validationError = validateRequest(request);
+    if (validationError != null) {
+      return error(validationError);
+    }
+
+    final String nick = request.getParameter(AjaxRequest.NICKNAME).trim();
+    final User user = createUser(request, nick);
+    user.userDidSomething();
+    user.contactedServer();
+    final ErrorCode errorCode = users.checkAndAdd(user);
+    if (null != errorCode) {
+      return error(errorCode);
+    }
+
+    return buildResponseData(session, user, nick);
+  }
+
+  /**
+   * @return The error to return to the client if the request is invalid, or {@code null} if it's
+   *         fine to proceed.
+   */
+  private ErrorCode validateRequest(final RequestWrapper request) {
     if (request.getParameter(AjaxRequest.NICKNAME) == null) {
-      return error(ErrorCode.NO_NICK_SPECIFIED);
-    } else if (request.getParameter(AjaxRequest.ID_CODE) != null
-        && (request.getParameter(AjaxRequest.ID_CODE).trim().length() < ID_CODE_MIN_LENGTH
-            || request.getParameter(AjaxRequest.ID_CODE).trim().length() > ID_CODE_MAX_LENGTH)) {
-      return error(ErrorCode.INVALID_ID_CODE);
-    } else {
-      final String nick = request.getParameter(AjaxRequest.NICKNAME).trim();
-      final String nickLower = nick.toLowerCase(Locale.ENGLISH);
-      for (final String banned : bannedNickList) {
-        if (nickLower.contains(banned)) {
-          return error(ErrorCode.RESERVED_NICK);
-        }
+      return ErrorCode.NO_NICK_SPECIFIED;
+    }
+    final String idCode = request.getParameter(AjaxRequest.ID_CODE);
+    if (idCode != null && (idCode.trim().length() < ID_CODE_MIN_LENGTH
+        || idCode.trim().length() > ID_CODE_MAX_LENGTH)) {
+      return ErrorCode.INVALID_ID_CODE;
+    }
+
+    final String nick = request.getParameter(AjaxRequest.NICKNAME).trim();
+    final String nickLower = nick.toLowerCase(Locale.ENGLISH);
+    for (final String banned : bannedNickList) {
+      if (nickLower.contains(banned)) {
+        return ErrorCode.RESERVED_NICK;
       }
-      if (!VALID_NAME.matcher(nick).matches()) {
-        return error(ErrorCode.INVALID_NICK);
-      } else {
-        String persistentId = request.getParameter(AjaxRequest.PERSISTENT_ID);
-        if (StringUtils.isBlank(persistentId)) {
-          persistentId = persistentIdProvider.get();
-        }
+    }
+    if (!VALID_NAME.matcher(nick).matches()) {
+      return ErrorCode.INVALID_NICK;
+    }
+    return null;
+  }
 
-        final String mangledIdCode = idCodeMangler.mangle(nick,
-            request.getParameter(AjaxRequest.ID_CODE));
+  private User createUser(final RequestWrapper request, final String nick) {
+    String persistentId = request.getParameter(AjaxRequest.PERSISTENT_ID);
+    if (StringUtils.isBlank(persistentId)) {
+      persistentId = persistentIdProvider.get();
+    }
+    final String mangledIdCode = idCodeMangler.mangle(nick,
+        request.getParameter(AjaxRequest.ID_CODE));
+    final NewUserInfo info = new NewUserInfo(nick, mangledIdCode, request.getRemoteAddr(),
+        adminList.contains(request.getRemoteAddr()), persistentId,
+        request.getHeader(HttpHeaders.ACCEPT_LANGUAGE), request.getHeader(HttpHeaders.USER_AGENT));
+    return userFactory.create(info);
+  }
 
-        final User user = userFactory.create(nick, mangledIdCode, request.getRemoteAddr(),
-            adminList.contains(request.getRemoteAddr()), persistentId,
-            request.getHeader(HttpHeaders.ACCEPT_LANGUAGE),
-            request.getHeader(HttpHeaders.USER_AGENT));
-        user.userDidSomething();
-        user.contactedServer();
-        final ErrorCode errorCode = users.checkAndAdd(user);
-        if (null == errorCode) {
-          // There is a findbugs warning on this line:
-          // cah/src/net/socialgamer/cah/handlers/RegisterHandler.java:85 Store of non serializable
-          // net.socialgamer.cah.data.User into HttpSession in
-          // net.socialgamer.cah.handlers.RegisterHandler.handle(RequestWrapper, HttpSession)
-          // I am choosing to ignore this for the time being as it works under light load, and I am
-          // intending on moving away from HttpSession for storing user data in the not too distant
-          // future, to fix issues with loading the game twice in the same browser.
-          session.setAttribute(SessionAttribute.USER, user);
+  // There is a findbugs warning on the session.setAttribute call below: Store of non serializable
+  // net.socialgamer.cah.data.User into HttpSession in
+  // net.socialgamer.cah.handlers.RegisterHandler.handle(RequestWrapper, HttpSession)
+  // I am choosing to ignore this for the time being as it works under light load, and I am
+  // intending on moving away from HttpSession for storing user data in the not too distant
+  // future, to fix issues with loading the game twice in the same browser. Making User (and
+  // transitively Game, GameManager, etc.) actually serializable would be a much larger change for
+  // no benefit, since sessions are never clustered or persisted in this deployment model.
+  @SuppressWarnings("java:S2441")
+  private Map<ReturnableData, Object> buildResponseData(final HttpSession session, final User user,
+      final String nick) {
+    session.setAttribute(SessionAttribute.USER, user);
 
-          data.put(AjaxResponse.NICKNAME, nick);
-          data.put(AjaxResponse.PERSISTENT_ID, persistentId);
-          data.put(AjaxResponse.ID_CODE, user.getIdCode());
-          data.put(AjaxResponse.SIGIL, user.getSigil().toString());
-          if (showSessionPermalink) {
-            data.put(AjaxResponse.SESSION_PERMALINK,
-                String.format(sessionPermalinkFormatString, user.getSessionId()));
-          }
-          if (showUserPermalink) {
-            data.put(AjaxResponse.USER_PERMALINK,
-                String.format(userPermalinkFormatString, user.getPersistentId()));
-          }
-        } else {
-          return error(errorCode);
-        }
-      }
+    final Map<ReturnableData, Object> data = new HashMap<ReturnableData, Object>();
+    data.put(AjaxResponse.NICKNAME, nick);
+    data.put(AjaxResponse.PERSISTENT_ID, user.getPersistentId());
+    data.put(AjaxResponse.ID_CODE, user.getIdCode());
+    data.put(AjaxResponse.SIGIL, user.getSigil().toString());
+    if (showSessionPermalink) {
+      data.put(AjaxResponse.SESSION_PERMALINK,
+          String.format(sessionPermalinkFormatString, user.getSessionId()));
+    }
+    if (showUserPermalink) {
+      data.put(AjaxResponse.USER_PERMALINK,
+          String.format(userPermalinkFormatString, user.getPersistentId()));
     }
     return data;
   }
