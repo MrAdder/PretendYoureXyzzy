@@ -78,7 +78,13 @@ public class ChatFilter {
   }
 
   private enum Scope {
-    global, game
+    GLOBAL, GAME;
+
+    @Override
+    public String toString() {
+      // Used to build pyx.chat.<scope>.* property keys, which are lowercase.
+      return name().toLowerCase(Locale.ENGLISH);
+    }
   }
 
   @Inject
@@ -87,7 +93,7 @@ public class ChatFilter {
   }
 
   public Result filterGlobal(final User user, final String message) {
-    final Result result = filterCommon(Scope.global, user, message);
+    final Result result = filterCommon(Scope.GLOBAL, user, message);
     if (Result.OK != result) {
       return result;
     }
@@ -95,12 +101,12 @@ public class ChatFilter {
     final long total = message.codePoints().count();
 
     if (!SIMPLE_MESSAGE_PATTERN.matcher(message).matches()
-        && total >= getIntParameter(Scope.global, "basic_min_len", DEFAULT_BASIC_MIN_MSG_LENGTH)) {
+        && total >= getIntParameter(Scope.GLOBAL, "basic_min_len", DEFAULT_BASIC_MIN_MSG_LENGTH)) {
       // do some more in-depth analysis. we don't want too many emoji or non-latin characters
       final long basic = message.codePoints()
           .filter(c -> Character.isJavaIdentifierPart(c) || Character.isSpaceChar(c))
           .count();
-      if (((double) basic) / total < getDoubleParameter(Scope.global, "basic_ratio",
+      if (((double) basic) / total < getDoubleParameter(Scope.GLOBAL, "basic_ratio",
           DEFAULT_BASIC_CHARACTER_RATIO)) {
         return Result.TOO_MANY_SPECIALS;
       }
@@ -108,37 +114,37 @@ public class ChatFilter {
 
     final String[] words = message.toLowerCase(Locale.ENGLISH).split("\\s+");
     final int spaces = words.length + 1;
-    if (total >= getIntParameter(Scope.global, "spaces_min_len", DEFAULT_SPACES_MIN_MSG_LENGTH)
-        && spaces < getIntParameter(Scope.global, "spaces_min_count", DEFAULT_SPACES_REQUIRED)) {
+    if (total >= getIntParameter(Scope.GLOBAL, "spaces_min_len", DEFAULT_SPACES_MIN_MSG_LENGTH)
+        && spaces < getIntParameter(Scope.GLOBAL, "spaces_min_count", DEFAULT_SPACES_REQUIRED)) {
       return Result.NOT_ENOUGH_SPACES;
     }
 
     final Set<String> uniqueWords = ImmutableSet.copyOf(words);
-    if (words.length >= getIntParameter(Scope.global, "repeated_words_min_count",
+    if (words.length >= getIntParameter(Scope.GLOBAL, "repeated_words_min_count",
         DEFAULT_REPEATED_WORDS_MIN_COUNT)
-        && ((double) uniqueWords.size()) / words.length < getDoubleParameter(Scope.global,
+        && ((double) uniqueWords.size()) / words.length < getDoubleParameter(Scope.GLOBAL,
             "repeated_words_unique_ratio", DEFAULT_REPEATED_WORDS_UNIQUE_RATIO)) {
       return Result.REPEAT_WORDS;
     }
 
     final long caps = message.codePoints().filter(c -> Character.isUpperCase(c)).count();
-    if (total >= getIntParameter(Scope.global, "capslock_min_len", DEFAULT_CAPSLOCK_MIN_MSG_LENGTH)
-        && ((double) caps) / total > getDoubleParameter(Scope.global, "capslock_ratio",
+    if (total >= getIntParameter(Scope.GLOBAL, "capslock_min_len", DEFAULT_CAPSLOCK_MIN_MSG_LENGTH)
+        && ((double) caps) / total > getDoubleParameter(Scope.GLOBAL, "capslock_ratio",
             DEFAULT_CAPSLOCK_RATIO)) {
       return Result.CAPSLOCK;
     }
 
-    getMessageTimes(user, Scope.global).add(System.currentTimeMillis());
+    getMessageTimes(user, Scope.GLOBAL).add(System.currentTimeMillis());
     return Result.OK;
   }
 
   public Result filterGame(final User user, final String message) {
-    final Result result = filterCommon(Scope.game, user, message);
+    final Result result = filterCommon(Scope.GAME, user, message);
     if (Result.OK != result) {
       return result;
     }
 
-    getMessageTimes(user, Scope.game).add(System.currentTimeMillis());
+    getMessageTimes(user, Scope.GAME).add(System.currentTimeMillis());
     return Result.OK;
   }
 
@@ -154,7 +160,7 @@ public class ChatFilter {
 
     if (message.length() > Constants.CHAT_MAX_LENGTH) {
       return Result.TOO_LONG;
-    } else if (message.length() == 0) {
+    } else if (message.isEmpty()) {
       return Result.NO_MESSAGE;
     }
 
@@ -173,9 +179,8 @@ public class ChatFilter {
       // assume that the banned strings are already lowercase
       // check both ways in case it decides lowercase of some unicode is not what we want though
       if (message.contains(banned) || messageLower.contains(banned)) {
-        LOG.info(String.format(
-            "Dropping message '%s' from user %s (%s); contains banned string %s.", message,
-            user.getNickname(), user.getHostname(), banned));
+        LOG.info("Dropping message '{}' from user {} ({}); contains banned string {}.",
+            LogSanitizer.sanitize(message), user.getNickname(), user.getHostname(), banned);
         return Result.DROP_MESSAGE;
       }
     }
@@ -239,7 +244,7 @@ public class ChatFilter {
       data = filterData.get(user);
       // we should only have to do this once per user...
       if (null == data) {
-        LOG.trace(String.format("Created new FilterData for user %s", user.getNickname()));
+        LOG.trace("Created new FilterData for user {}", user.getNickname());
         data = new FilterData();
         filterData.put(user, data);
       }
@@ -257,8 +262,8 @@ public class ChatFilter {
 
     private FilterData() {
       final Map<Scope, List<Long>> map = new TreeMap<>();
-      map.put(Scope.global, Collections.synchronizedList(new LinkedList<>()));
-      map.put(Scope.game, Collections.synchronizedList(new LinkedList<>()));
+      map.put(Scope.GLOBAL, Collections.synchronizedList(new LinkedList<>()));
+      map.put(Scope.GAME, Collections.synchronizedList(new LinkedList<>()));
       lastMessageTimes = Collections.unmodifiableMap(map);
     }
   }

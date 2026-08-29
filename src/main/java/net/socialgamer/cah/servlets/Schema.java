@@ -83,7 +83,15 @@ public class Schema extends HttpServlet {
         .build();
     try {
       final Metadata metadata = new MetadataSources(registry).buildMetadata();
-      final PrintWriter out = response.getWriter();
+      final PrintWriter out;
+      try {
+        out = response.getWriter();
+      } catch (final IOException e) {
+        LOG.error("Unable to get response writer for schema export", e);
+        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+            "Unable to get response writer.");
+        return;
+      }
       final ScriptTargetOutput target = new ScriptTargetOutputToWriter(out);
       registry.getService(SchemaManagementTool.class)
           .getSchemaCreator(Map.of())
