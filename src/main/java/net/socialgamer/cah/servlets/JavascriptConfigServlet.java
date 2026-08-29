@@ -111,6 +111,9 @@ public class JavascriptConfigServlet extends HttpServlet {
     builder.append(String.format("cah.DEFAULT_BLANK_CARD_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, DefaultBlankCardLimit.class))));
     builder.append(String.format("cah.MAX_BLANK_CARD_LIMIT = %d;%n",injector.getInstance(Key.get(Integer.class, MaxBlankCardLimit.class))));
 
+    final String discordClientId = injector.getInstance(Key.get(String.class, DiscordClientId.class));
+    builder.append(String.format("cah.DISCORD_CLIENT_ID = '%s';%n", discordClientId));
+
     resp.setContentType("text/javascript");
     final PrintWriter out;
     try {

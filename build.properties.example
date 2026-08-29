@@ -161,3 +161,10 @@ kafka.sasl.password=
 # Only used if the above is not NoOpMetrics.
 # See README.md for instructions.
 geoip.db=
+
+# Discord integration. Both are optional and independent of each other.
+# Webhook URL to post a message to when the server starts and stops. Leave blank to disable.
+discord.webhook.url=
+# Application (Client) ID from the Discord Developer Portal, used by the client to run this app as
+# a Discord Activity (embedded in a voice channel). Leave blank to disable.
+discord.client_id=

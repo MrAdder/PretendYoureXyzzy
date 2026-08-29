@@ -40,6 +40,7 @@ import net.socialgamer.cah.customsets.CustomCardsService;
 import net.socialgamer.cah.metrics.Metrics;
 import net.socialgamer.cah.task.BroadcastGameListUpdateTask;
 import net.socialgamer.cah.task.UserPingTask;
+import net.socialgamer.cah.util.DiscordNotifier;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,6 +110,8 @@ public class StartupUtils extends GuiceServletContextListener {
     final ServletContext context = contextEvent.getServletContext();
 
     final Injector injector = (Injector) context.getAttribute(INJECTOR);
+    injector.getInstance(DiscordNotifier.class).notify("PYX server is stopping.");
+
     final ScheduledThreadPoolExecutor timer = injector
         .getInstance(ScheduledThreadPoolExecutor.class);
     timer.shutdownNow();
@@ -146,6 +149,8 @@ public class StartupUtils extends GuiceServletContextListener {
     // log that the server (re-)started to metrics logging (to flush all old games and users)
     injector.getInstance(Metrics.class).serverStart(
         injector.getInstance(Key.get(String.class, UniqueId.class)));
+
+    injector.getInstance(DiscordNotifier.class).notify("PYX server has started.");
   }
 
   public static void reloadProperties(final ServletContext context) {
