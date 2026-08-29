@@ -167,7 +167,7 @@
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
-        <version>9.3.0.v20150612</version>
+        <version>9.4.56.v20240826</version>
 
         <configuration>
           <!-- Uncomment this to enable JMX in Jetty for debugging. -->
@@ -190,6 +190,12 @@
           <webAppSourceDirectory>WebContent</webAppSourceDirectory>
           <stopPort>8081</stopPort>
           <stopKey>STOP</stopKey>
+          <!-- Newer jetty-maven-plugin versions skip jetty:run on non-war packaging unless told
+               otherwise; this project is packaging=jar but still a webapp (see the war-plugin
+               config above, and the exploded-war layout jetty:run is pointed at). -->
+          <supportedPackagings>
+            <supportedPackaging>jar</supportedPackaging>
+          </supportedPackagings>
         </configuration>
       </plugin>
 
