@@ -354,3 +354,11 @@ cah.ajax.SuccessHandlers[cah.$.AjaxOperation.WHOIS] = function(data, req) {
       + idle.getUTCMinutes() + " mins " + idle.getUTCSeconds() + " secs");
   cah.log.status_with_game(chatWindowId, "End of whois information");
 };
+
+cah.ajax.SuccessHandlers[cah.$.AjaxOperation.GAME_HOST] = function(data) {
+  // pass
+};
+
+cah.ajax.SuccessHandlers[cah.$.AjaxOperation.GAME_SKIP] = function(data) {
+  // pass
+};

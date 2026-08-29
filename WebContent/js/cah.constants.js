@@ -372,6 +372,8 @@ cah.$.AjaxOperation.STOP_GAME = "Sg";
 cah.$.AjaxOperation.GAME_CHAT = "GC";
 cah.$.AjaxOperation.SPECTATE_GAME = "vg";
 cah.$.AjaxOperation.JUDGE_SELECT = "js";
+cah.$.AjaxOperation.GAME_HOST = "GH";
+cah.$.AjaxOperation.GAME_SKIP = "GS";
 
 cah.$.ReconnectNextAction = function() {
   // Dummy constructor to make Eclipse auto-complete.
