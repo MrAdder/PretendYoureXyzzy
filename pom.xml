@@ -323,7 +323,7 @@
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
-      <version>3.0.1</version>
+      <version>4.0.1</version>
     </dependency>
     <dependency>
       <!-- Only for DiscordSessionCookieFilter, which has to reach below the servlet API to rewrite
