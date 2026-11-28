@@ -404,7 +404,7 @@
     <dependency>
       <groupId>com.maxmind.geoip2</groupId>
       <artifactId>geoip2</artifactId>
-      <version>5.2.0</version>
+      <version>5.3.0</version>
     </dependency>
     <!-- RegisterHandler and CustomCardsService use these directly; they used to compile only
          because old geoip2 versions pulled them in transitively for its own HTTP client, which
